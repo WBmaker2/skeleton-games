@@ -35,6 +35,7 @@ class FallbackEngine implements PoseEngine {
 - 방향키/WASD: 240px/s, 경계 클램프. Space: 커서를 150ms 위로 60px 점프 (손들기 제스처).
 - `estimate`는 카메라 없이 동작해야 하므로 `_video` 무시, `width 640 height 480 timestamp performance.now()`.
 - 필수 keypoints: nose, left/right_shoulder, left/right_elbow, left_wrist, right_wrist(=cursor), left/right_hip, left/right_knee, left/right_ankle. 어깨 y=120, 손목 기본 y=200 (MathJump handUp: cursor y < 100 가능).
+- 입력 UX (2026-09-19 개정): onPointer는 버블링 오차를 피하기 위해 `e.target`이 아닌 attach된 el의 `getBoundingClientRect()` 사용. 처리한 키(방향키/WASD/스페이스)는 `preventDefault()`. attach 시 기존 tabindex가 없을 때만 `0` 설정 후 `el.focus()` 호출 (기존 값 보존).
 
 ### B. FpsMonitor + 자동 성능저하 대응 (순수 로직)
 
