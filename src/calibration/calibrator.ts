@@ -3,6 +3,7 @@ import type { Calibration, PoseFrame } from '../pose/types';
 import { bodyCenterX, getByName, shoulderWidth } from '../pose/geometry';
 
 export function calibrate(frames: PoseFrame[]): Calibration {
+  if (!frames.length) return { scale: 1, centerX: 320, mode: 'seated', shoulderWidth: 100 };
   const valid = frames.filter((f) => f.keypoints.length >= 4);
   const last = valid[valid.length - 1] ?? frames[0];
   const widths = valid.map(shoulderWidth);
@@ -22,6 +23,7 @@ export function isTPose(frame: PoseFrame, cal: Calibration): boolean {
   const rs = getByName(frame, 'right_shoulder');
   if (!lw || !rw || !ls || !rs) return false;
   const armSpread = Math.abs(lw.x - rw.x) / Math.max(1, cal.shoulderWidth);
-  const level = Math.abs(lw.y - ls.y) < 60 && Math.abs(rw.y - rs.y) < 60;
+  const thresh = 60 * Math.max(0.5, cal.scale);
+  const level = Math.abs(lw.y - ls.y) < thresh && Math.abs(rw.y - rs.y) < thresh;
   return armSpread > 1.6 && level;
 }

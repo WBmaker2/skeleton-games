@@ -3,6 +3,26 @@ import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import type { PoseFrame } from './types';
 import type { PoseEngine } from './pose-engine';
 
+const LANDMARK_NAMES: Record<number, string> = {
+  0: 'nose',
+  11: 'left_shoulder',
+  12: 'right_shoulder',
+  13: 'left_elbow',
+  14: 'right_elbow',
+  15: 'left_wrist',
+  16: 'right_wrist',
+  23: 'left_hip',
+  24: 'right_hip',
+  25: 'left_knee',
+  26: 'right_knee',
+  27: 'left_ankle',
+  28: 'right_ankle'
+};
+
+export function landmarkName(i: number): string {
+  return LANDMARK_NAMES[i] ?? `lm${i}`;
+}
+
 export class MediaPipeAdapter implements PoseEngine {
   name = 'mediapipe-pose';
   private landmarker: PoseLandmarker | null = null;
@@ -31,7 +51,7 @@ export class MediaPipeAdapter implements PoseEngine {
       height: video.videoHeight || 480,
       timestamp: performance.now(),
       keypoints: pts.map((p, i) => ({
-        name: `lm${i}`,
+        name: landmarkName(i),
         x: p.x * (video.videoWidth || 640),
         y: p.y * (video.videoHeight || 480),
         score: 1

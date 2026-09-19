@@ -46,6 +46,12 @@ export class MathJump implements Game {
     if (!this.running) return [];
     const cx = bodyCenterX(frame);
     const zone = this.zoneOf(cx, frame.width);
+    const gateNames = ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip', 'left_wrist', 'right_wrist'];
+    const confident = gateNames.filter((n) => (getByName(frame, n)?.score ?? 0) > 0.5).length >= 2;
+    if (!confident) {
+      this.dwellMs = 0;
+      return [];
+    }
     const lw = getByName(frame, 'left_wrist');
     const ls = getByName(frame, 'left_shoulder');
     const handUp = lw && ls ? lw.y < ls.y - 20 : false;

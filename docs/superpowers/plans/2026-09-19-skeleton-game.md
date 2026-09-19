@@ -776,6 +776,8 @@ git add src/game/types.ts src/game/engine.ts src/game/storage.ts src/ui/renderer
 git commit -m "feat: add game core with score storage renderer"
 ```
 
+Note (ruling 2026-09-19): ScoreBoard combo multiplier is *5 (test expects 30); brief *2 was inconsistent.
+
 ---
 
 ### Task 6: 과일 닌자 몸버전

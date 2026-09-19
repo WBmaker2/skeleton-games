@@ -52,6 +52,7 @@ export class FruitNinja implements Game {
           events.push({ type: 'slice', points: 10, label: '과일 베기!' });
         } else {
           this.board.comboMiss();
+          this.board.add(-15);
           events.push({ type: 'bomb', points: -15, label: '폭탄! X자로 피하세요' });
         }
       }

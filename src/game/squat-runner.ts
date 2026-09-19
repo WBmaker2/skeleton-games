@@ -32,7 +32,15 @@ export class SquatRunner implements Game {
   }
   tick(frame: PoseFrame, _dtMs: number): GameEvent[] {
     if (!this.running) return [];
-    const angle = Math.min(kneeAngle(frame, 'left'), kneeAngle(frame, 'right'));
+    const hasSide = (side: 'left' | 'right'): boolean =>
+      !!getByName(frame, `${side}_hip`) && !!getByName(frame, `${side}_knee`) && !!getByName(frame, `${side}_ankle`);
+    const leftOk = hasSide('left');
+    const rightOk = hasSide('right');
+    let angle: number;
+    if (leftOk && rightOk) angle = Math.min(kneeAngle(frame, 'left'), kneeAngle(frame, 'right'));
+    else if (leftOk) angle = kneeAngle(frame, 'left');
+    else if (rightOk) angle = kneeAngle(frame, 'right');
+    else angle = 180;
     if (angle < 100) {
       this.holdMs += _dtMs;
       if (!this.isDown && this.holdMs > 300) {

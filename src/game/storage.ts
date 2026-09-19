@@ -4,7 +4,15 @@ export interface ScoreEntry { name: string; score: number }
 export function saveScore(gameId: string, entry: ScoreEntry): void {
   const key = `skelplay:${gameId}`;
   const raw = localStorage.getItem(key);
-  const list: ScoreEntry[] = raw ? (JSON.parse(raw) as ScoreEntry[]) : [];
+  let list: ScoreEntry[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as ScoreEntry[];
+      list = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      list = [];
+    }
+  }
   list.push(entry);
   list.sort((a, b) => b.score - a.score);
   localStorage.setItem(key, JSON.stringify(list.slice(0, 5)));
@@ -12,8 +20,13 @@ export function saveScore(gameId: string, entry: ScoreEntry): void {
 
 export function topScores(gameId: string, limit = 5): ScoreEntry[] {
   const raw = localStorage.getItem(`skelplay:${gameId}`);
-  const list: ScoreEntry[] = raw ? (JSON.parse(raw) as ScoreEntry[]) : [];
-  return list.slice(0, limit);
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw) as ScoreEntry[];
+    return Array.isArray(list) ? list.slice(0, limit) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function shareLink(gameId: string): string {

@@ -14,4 +14,10 @@ describe('storage', () => {
   it('builds share link with hash', () => {
     expect(shareLink('fruit')).toContain('#/fruit');
   });
+  it('returns [] on corrupted JSON', () => {
+    localStorage.setItem('skelplay:fruit', 'not-json{{{');
+    expect(topScores('fruit')).toEqual([]);
+    saveScore('fruit', { name: 'recovered', score: 7 });
+    expect(topScores('fruit')).toMatchObject([{ name: 'recovered', score: 7 }]);
+  });
 });

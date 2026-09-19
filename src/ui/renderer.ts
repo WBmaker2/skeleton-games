@@ -17,6 +17,7 @@ const LINKS: [string, string][] = [
 ];
 
 export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void {
+  canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const byName = new Map(frame.keypoints.map((k) => [k.name, k]));
