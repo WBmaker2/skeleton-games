@@ -16,14 +16,14 @@ export class FallbackEngine implements PoseEngine {
   private el: HTMLElement | null = null;
   private onKey = (e: KeyboardEvent): void => {
     const step = CURSOR_SPEED / 10;
-    if (e.key === 'ArrowLeft' || e.key === 'a') this.moveTo(this.cursor.x - step, this.cursor.y);
-    else if (e.key === 'ArrowRight' || e.key === 'd') this.moveTo(this.cursor.x + step, this.cursor.y);
-    else if (e.key === 'ArrowUp' || e.key === 'w') this.moveTo(this.cursor.x, this.cursor.y - step);
-    else if (e.key === 'ArrowDown' || e.key === 's') this.moveTo(this.cursor.x, this.cursor.y + step);
-    else if (e.key === ' ') this.moveTo(this.cursor.x, this.cursor.y - 60);
+    if (e.key === 'ArrowLeft' || e.key === 'a') { e.preventDefault(); this.moveTo(this.cursor.x - step, this.cursor.y); }
+    else if (e.key === 'ArrowRight' || e.key === 'd') { e.preventDefault(); this.moveTo(this.cursor.x + step, this.cursor.y); }
+    else if (e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); this.moveTo(this.cursor.x, this.cursor.y - step); }
+    else if (e.key === 'ArrowDown' || e.key === 's') { e.preventDefault(); this.moveTo(this.cursor.x, this.cursor.y + step); }
+    else if (e.key === ' ') { e.preventDefault(); this.moveTo(this.cursor.x, this.cursor.y - 60); }
   };
   private onPointer = (e: PointerEvent): void => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect?.();
+    const rect = this.el?.getBoundingClientRect() ?? (e.target as HTMLElement).getBoundingClientRect?.();
     const x = rect && rect.width ? ((e.clientX - rect.left) / rect.width) * W : e.clientX;
     const y = rect && rect.height ? ((e.clientY - rect.top) / rect.height) * H : e.clientY;
     this.moveTo(x, y);
@@ -36,7 +36,8 @@ export class FallbackEngine implements PoseEngine {
   attach(el: HTMLElement): void {
     this.detach();
     this.el = el;
-    el.setAttribute('tabindex', '0');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.focus();
     el.addEventListener('keydown', this.onKey);
     el.addEventListener('pointermove', this.onPointer as EventListener);
   }

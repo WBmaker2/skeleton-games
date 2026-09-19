@@ -34,4 +34,24 @@ describe('FallbackEngine', () => {
       expect(frame.keypoints.find((k) => k.name === n)?.score).toBe(1);
     }
   });
+  it('focuses attached element', () => {
+    const eng = new FallbackEngine();
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    eng.attach(el);
+    expect(document.activeElement).toBe(el);
+    eng.detach();
+    el.remove();
+  });
+  it('prevents default on handled keys', () => {
+    const eng = new FallbackEngine();
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    eng.attach(el);
+    const e = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+    const notCancelled = el.dispatchEvent(e);
+    expect(e.defaultPrevented || !notCancelled).toBe(true);
+    eng.detach();
+    el.remove();
+  });
 });
