@@ -1,7 +1,11 @@
 // tests/fruit-ninja.test.ts
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FruitNinja } from '../src/game/fruit-ninja';
 import type { PoseFrame } from '../src/pose/types';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function wristFrame(x: number, y: number): PoseFrame {
   return {
@@ -29,5 +33,23 @@ describe('FruitNinja', () => {
     g.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'fruit', alive: true });
     const events = g.tick(wristFrame(500, 400), 16);
     expect(events.length).toBe(0);
+  });
+  it('spawns at lively pace (600ms interval)', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const g = new FruitNinja();
+    g.start();
+    for (let i = 0; i < 44; i++) g.tick(wristFrame(0, 0), 16);
+    // 704ms → exactly one spawn at the 600ms mark, far from both wrists.
+    expect(g.fruits.length).toBe(1);
+  });
+  it('bursts extra fruits every 10 slices', () => {
+    const g = new FruitNinja();
+    g.start();
+    g.slices = 9;
+    g.fruits.length = 0;
+    g.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'fruit', alive: true });
+    g.tick(wristFrame(100, 100), 16);
+    expect(g.slices).toBe(10);
+    expect(g.fruits.length).toBeGreaterThanOrEqual(2);
   });
 });

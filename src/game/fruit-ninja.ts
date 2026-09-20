@@ -11,6 +11,7 @@ export class FruitNinja implements Game {
   fruits: Fruit[] = [];
   board = new ScoreBoard();
   radiusScale = 1;
+  slices = 0;
   private running = false;
   private spawnMs = 0;
 
@@ -19,6 +20,7 @@ export class FruitNinja implements Game {
     this.board.reset();
     this.fruits = [];
     this.spawnMs = 0;
+    this.slices = 0;
   }
   stop(): void {
     this.running = false;
@@ -51,20 +53,21 @@ export class FruitNinja implements Game {
   }
   spawn(): void {
     const kind = Math.random() < 0.2 ? 'bomb' : 'fruit';
-    this.fruits.push({ x: 60 + Math.random() * 520, y: 480, vx: (Math.random() - 0.5) * 120, vy: -(260 + Math.random() * 160), kind, alive: true });
+    // 빠른 상승 + 강한 중력: 화면에 오래 머물지 않고 리듬감 있게 오르내림.
+    this.fruits.push({ x: 60 + Math.random() * 520, y: 480, vx: (Math.random() - 0.5) * 160, vy: -(320 + Math.random() * 220), kind, alive: true });
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
     const dt = dtMs / 1000;
     this.spawnMs += dtMs;
-    if (this.spawnMs > 900) {
+    if (this.spawnMs > 600) {
       this.spawnMs = 0;
       this.spawn();
     }
     for (const f of this.fruits) {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
-      f.vy += 500 * dt;
+      f.vy += 620 * dt;
     }
     const wrists = [getByName(frame, 'left_wrist'), getByName(frame, 'right_wrist')].filter((w) => w && (w.score ?? 0) > 0.3);
     const events: GameEvent[] = [];
@@ -76,6 +79,12 @@ export class FruitNinja implements Game {
         if (f.kind === 'fruit') {
           this.board.comboHit();
           this.board.add(10);
+          this.slices += 1;
+          // 10개마다 2개 동시 스폰으로 박진감 유지.
+          if (this.slices % 10 === 0) {
+            this.spawn();
+            this.spawn();
+          }
           events.push({ type: 'slice', points: 10, label: '과일 베기!' });
         } else {
           this.board.comboMiss();

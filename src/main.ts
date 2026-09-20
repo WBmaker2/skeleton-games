@@ -147,6 +147,13 @@ export function boot(): void {
       });
     });
   };
+  // 게임 캐릭터 마스크를 미리 로드한다. 파일이 없어도 에러가 나지 않으며,
+  // drawFaceMask가 로드 완료된 이미지만 그린다.
+  const loadFaceMask = (id: PlayableId): HTMLImageElement => {
+    const img = new Image();
+    img.src = `art/mask-${id}.png`;
+    return img;
+  };
   const start = async (id: PlayableId) => {
     const hud = document.getElementById('hud');
     const scoreEl = document.getElementById('score');
@@ -217,6 +224,8 @@ export function boot(): void {
       game,
       calibration: cal,
       showSkeleton: true,
+      // 게임 캐릭터 마스크 (파일이 없으면 drawFaceMask가 스킵).
+      face: loadFaceMask(id),
       onEvent: (events, board) => {
         for (const e of events) {
           beep(

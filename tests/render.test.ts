@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { createGame, type PlayableId } from '../src/ui/app';
+import { drawParticles, spawnBurst, tickParticles, type Particle } from '../src/ui/renderer';
 
 function stubCtx(): CanvasRenderingContext2D {
   const fn = (..._args: unknown[]): undefined => undefined;
@@ -42,5 +43,28 @@ describe('game draw methods', () => {
     );
     game.draw?.(ctx, 640, 480);
     expect(calls.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('celebration particles', () => {
+  it('spawns and fades bursts', () => {
+    const ps: Particle[] = [];
+    spawnBurst(ps, 320, 240);
+    expect(ps.length).toBe(14);
+    const after = tickParticles(ps, 200);
+    expect(after.length).toBe(14);
+    expect(after[0].life).toBeLessThan(after[0].maxLife);
+    expect(tickParticles(after, 1000)).toEqual([]);
+  });
+  it('draws one circle per live particle', () => {
+    const ps: Particle[] = [];
+    spawnBurst(ps, 320, 240, 5);
+    let arcs = 0;
+    const ctx = stubCtx();
+    (ctx as unknown as Record<string, unknown>).arc = () => {
+      arcs += 1;
+    };
+    drawParticles(ctx, ps);
+    expect(arcs).toBe(5);
   });
 });

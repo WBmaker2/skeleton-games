@@ -86,6 +86,37 @@ export function drawLabel(
   ctx.restore();
 }
 
+// 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 크기.
+// 이미지가 없거나 아직 로드 전이면 조용히 건너뛴다.
+export function drawFaceMask(
+  ctx: CanvasRenderingContext2D,
+  frame: PoseFrame,
+  img: HTMLImageElement | null | undefined
+): void {
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+  const byName = new Map(frame.keypoints.map((k) => [k.name, k]));
+  const nose = byName.get('nose');
+  const ls = byName.get('left_shoulder');
+  const rs = byName.get('right_shoulder');
+  let cx = 0;
+  let cy = 0;
+  if (nose && (nose.score ?? 0) > 0.3) {
+    cx = nose.x;
+    cy = nose.y;
+  } else if (ls && rs) {
+    cx = (ls.x + rs.x) / 2;
+    cy = (ls.y + rs.y) / 2 - 40;
+  } else {
+    return;
+  }
+  const sw =
+    ls && rs ? Math.max(40, Math.hypot(ls.x - rs.x, ls.y - rs.y)) : 100;
+  const size = sw * 1.4;
+  ctx.save();
+  ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+  ctx.restore();
+}
+
 export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void {
   // 화면 지우기는 GameLoop가 담당 (게임 요소 → 스켈레톤 순서로 겹쳐 그리기).
   const ctx = canvas.getContext('2d');
@@ -102,4 +133,81 @@ export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void 
     ctx.lineTo(q.x, q.y);
     ctx.stroke();
   }
+  // 손 마커: 베기·잡기의 판정점(손목)을 동그라미로 표시.
+  // 오른손은 이중 링으로 구분 (색이 아닌 모양 단서, WCAG 1.4.1).
+  for (const name of ['left_wrist', 'right_wrist']) {
+    const w = byName.get(name);
+    if (!w || (w.score ?? 0) < 0.3) continue;
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#22303c';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    if (name === 'right_wrist') {
+      ctx.strokeStyle = '#dfff00';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, 16, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+export interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  color: string;
+  size: number;
+}
+
+const BURST_COLORS = ['#dfff00', '#ff71ce', '#ffffff', '#00ffff'];
+
+// 미션 성공 축하 파티클: 호출자가 배열을 보관하고 매 틱 tick/draw한다.
+export function spawnBurst(out: Particle[], x: number, y: number, n = 14): void {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 90 + Math.random() * 220;
+    const life = 450 + Math.random() * 350;
+    out.push({
+      x,
+      y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp - 120,
+      life,
+      maxLife: life,
+      color: BURST_COLORS[i % BURST_COLORS.length],
+      size: 3 + Math.random() * 4
+    });
+  }
+}
+
+export function tickParticles(ps: Particle[], dtMs: number): Particle[] {
+  const dt = dtMs / 1000;
+  for (const p of ps) {
+    p.vy += 900 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dtMs;
+  }
+  return ps.filter((p) => p.life > 0);
+}
+
+export function drawParticles(ctx: CanvasRenderingContext2D, ps: Particle[]): void {
+  ctx.save();
+  for (const p of ps) {
+    ctx.globalAlpha = Math.min(1, Math.max(0, p.life / p.maxLife));
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
