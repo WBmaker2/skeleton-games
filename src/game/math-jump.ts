@@ -54,7 +54,9 @@ export class MathJump implements Game {
     }
     const lw = getByName(frame, 'left_wrist');
     const ls = getByName(frame, 'left_shoulder');
-    const handUp = lw && ls ? lw.y < ls.y - 20 : false;
+    const rw = getByName(frame, 'right_wrist');
+    const rs = getByName(frame, 'right_shoulder');
+    const handUp = [lw && ls ? lw.y < ls.y - 20 : false, rw && rs ? rw.y < rs.y - 20 : false].some(Boolean);
     if (zone === this.lastZone) {
       this.dwellMs += dtMs;
     } else {
