@@ -21,7 +21,8 @@ npm run build   # dist/ 생성
 
 ## 학교 인트라넷
 
-`dist/`를 내부 웹서버에 복사. 최초 모델 로드만 외부 CDN 필요:
-- `@mediapipe/tasks-vision` wasm (jsdelivr)
-- pose_landmarker_lite.task (googleapis)
-이후 Service Worker가 캐시. 완전 오프라인이 필요하면 위 파일을 내부 경로에 두고 어댑터 URL 교체.
+`dist/`를 내부 웹서버에 복사. 포즈 모델(MoveNet + pose_landmarker)은
+`dist/models/`에 동봉되어 Service Worker가 첫 방문에 precache하므로,
+TFHub·googleapis 차단 망에서도 동작. 유일한 외부 의존성은
+`@mediapipe/tasks-vision` wasm (jsdelivr, ABC 게임 첫 실행 시 1회).
+완전 오프라인이 필요하면 wasm 파일도 내부 경로에 두고 어댑터 URL 교체.

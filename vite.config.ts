@@ -10,7 +10,12 @@ export default defineConfig({
       registerType: 'autoUpdate',
       // pose engines (tfjs/mediapipe) push the bundle past
       // workbox's 2 MiB default precache limit — raise it.
-      workbox: { maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 },
+      // Self-hosted pose models (json/bin/task) are precached too,
+      // so the games work offline after the first visit.
+      workbox: {
+        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,json,bin,task,webmanifest}']
+      },
       manifest: {
         name: 'Skeleton Play',
         short_name: 'SkelPlay',

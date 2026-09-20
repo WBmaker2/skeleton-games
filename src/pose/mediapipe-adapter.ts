@@ -23,6 +23,20 @@ export function landmarkName(i: number): string {
   return LANDMARK_NAMES[i] ?? `lm${i}`;
 }
 
+// Self-hosted task bundle (public/models/). Falls back to the Google CDN
+// when the local copy is missing, so ABC keeps working either way.
+export const POSE_TASK_LOCAL_URL = 'models/pose_landmarker_lite.task';
+const POSE_TASK_CDN_URL =
+  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+
+async function createLandmarker(vision: unknown, modelAssetPath: string): Promise<PoseLandmarker> {
+  return PoseLandmarker.createFromOptions(vision as Parameters<typeof PoseLandmarker.createFromOptions>[0], {
+    baseOptions: { modelAssetPath, delegate: 'GPU' },
+    runningMode: 'VIDEO',
+    numPoses: 1
+  });
+}
+
 export class MediaPipeAdapter implements PoseEngine {
   name = 'mediapipe-pose';
   private landmarker: PoseLandmarker | null = null;
@@ -31,15 +45,13 @@ export class MediaPipeAdapter implements PoseEngine {
     const vision = await FilesetResolver.forVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
     );
-    this.landmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-        delegate: 'GPU'
-      },
-      runningMode: 'VIDEO',
-      numPoses: 1
-    });
+    try {
+      this.landmarker = await createLandmarker(vision, POSE_TASK_LOCAL_URL);
+      return;
+    } catch (err) {
+      console.warn('[pose] local task bundle failed, falling back to CDN', err);
+    }
+    this.landmarker = await createLandmarker(vision, POSE_TASK_CDN_URL);
   }
 
   async estimate(video: HTMLVideoElement): Promise<PoseFrame> {
