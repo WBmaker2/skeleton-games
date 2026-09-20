@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // GitHub Pages (project site) 기준. 저장소명이 다르면 '/<repo>/'로 교체 후 재빌드.
+  // Cloudflare Pages·인트라넷 등 루트 호스팅 시에는 '/'로 되돌릴 것.
+  base: '/skeleton-idea/',
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

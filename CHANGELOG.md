@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (2026-09-19) — 배포 준비
+
+- 키보드 완주 통합테스트 (4종 완주를 CI에서 증명)
+- GitHub Pages base `/skeleton-idea/` 적용, dist/PWA 감사 기록 (docs/PREDEPLOY.md)
+- PWA 아이콘 실측 확인 (PNG 192/512), SW precache 2.5MB
+
 ## 0.2.0 (2026-09-19) — 플레이 가능
 
 - 플레이 루프: rAF·dt클램프·fps 저하 시 15fps 스킵·HUD
