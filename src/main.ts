@@ -25,16 +25,23 @@ export function boot(): void {
 }
 
 export async function openCamera(): Promise<HTMLVideoElement | null> {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
-    const video = document.getElementById('cam') as HTMLVideoElement | null;
-    if (!video) return null;
-    video.srcObject = stream;
-    await video.play();
-    return video;
-  } catch {
-    return null;
+  const video = document.getElementById('cam') as HTMLVideoElement | null;
+  if (!video) return null;
+  const attempts: MediaTrackConstraints[] = [
+    { width: 1280, height: 720, facingMode: 'user' },
+    { width: 640, height: 480 }
+  ];
+  for (const vc of attempts) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
+      video.srcObject = stream;
+      await video.play();
+      return video;
+    } catch {
+      // 다음 해상도로 폴백
+    }
   }
+  return null;
 }
 
 boot();
