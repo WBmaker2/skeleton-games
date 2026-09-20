@@ -1,0 +1,222 @@
+/* Game screen — same Chaotic Maximalism tokens as the landing (theme.css).
+ * Screen metrics live in .game-screen; component shells below it. */
+
+/* Component display values must not override the hidden attribute. */
+[hidden] {
+  display: none !important;
+}
+
+.game-screen {
+  --game-max: 760px;
+  --game-gap: var(--lp-space-4);
+  --game-pad: var(--lp-space-4);
+  min-height: 100vh;
+  margin: 0;
+  padding: var(--game-pad);
+  box-sizing: border-box;
+  color: var(--lp-paper);
+  background-color: var(--lp-night);
+  background-image: radial-gradient(circle, var(--lp-cyan) 1.5px, transparent 2px);
+  background-size: 24px 24px;
+  font-family: var(--lp-font-display);
+}
+
+.game-inner {
+  max-width: var(--game-max);
+  margin: 0 auto;
+}
+
+.game-kicker {
+  font-family: var(--lp-font-serif);
+  font-style: italic;
+  color: var(--lp-cyan);
+  margin: 0 0 var(--lp-space-1);
+}
+
+.game-title {
+  margin: 0 0 var(--lp-space-3);
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  line-height: 1.1;
+  color: var(--lp-yellow);
+  text-shadow: 3px 3px 0 var(--lp-pink);
+}
+
+/* Nav: one positioning model for all game links */
+.game-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lp-space-2);
+  margin: 0 0 var(--game-gap);
+}
+
+.game-nav a {
+  padding: var(--lp-space-2) var(--lp-space-4);
+  min-height: var(--lp-target-min);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  color: var(--lp-ink);
+  background: var(--lp-paper);
+  border: 3px solid var(--lp-ink);
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.game-nav a:focus-visible {
+  outline: var(--lp-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Stage: video mirror with canvas overlay, shared 4/3 frame */
+.stage-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #0d0518;
+  border: var(--lp-card-border) solid var(--lp-ink);
+  border-radius: var(--lp-card-radius);
+  box-shadow: 8px 8px 0 var(--lp-pink);
+}
+
+.stage-frame video,
+.stage-frame canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Scoreboard chips: shared shell, one metric each */
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lp-space-3);
+  margin: var(--game-gap) 0 0;
+  padding: 0;
+}
+
+.hud-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--lp-space-2) var(--lp-space-4);
+  color: var(--lp-ink);
+  background: var(--lp-paper);
+  border: 3px solid var(--lp-ink);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.hud-chip span {
+  display: block;
+  font-family: var(--lp-font-mono);
+  font-size: var(--lp-text-badge);
+  font-weight: bold;
+}
+
+.hud-chip strong {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-msg {
+  min-height: 1.75em;
+  font-size: var(--lp-text-body);
+}
+
+/* Calibration / error overlay */
+.overlay {
+  margin: var(--game-gap) 0 0;
+  padding: var(--lp-space-6);
+  color: var(--lp-ink);
+  background: var(--lp-paper);
+  border: var(--lp-card-border) solid var(--lp-ink);
+  border-radius: var(--lp-card-radius);
+  box-shadow: 8px 8px 0 var(--lp-cyan);
+}
+
+.overlay-error {
+  box-shadow: 8px 8px 0 var(--lp-pink);
+}
+
+/* Buttons: one shape, two variants */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lp-space-3) var(--lp-space-6);
+  min-height: var(--lp-target-min);
+  box-sizing: border-box;
+  font-family: var(--lp-font-display);
+  font-size: var(--lp-text-body);
+  font-weight: bold;
+  color: var(--lp-paper);
+  background: var(--lp-violet);
+  border: 3px solid var(--lp-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-accent {
+  color: var(--lp-ink);
+  background: var(--lp-yellow);
+}
+
+.btn:focus-visible {
+  outline: var(--lp-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Camera row: label + select share one baseline */
+.camrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lp-space-3);
+  margin: var(--game-gap) 0 0;
+}
+
+.camrow label {
+  font-weight: bold;
+  color: var(--lp-yellow);
+}
+
+.camrow select {
+  flex: 1 1 auto;
+  min-width: min(100%, 220px);
+  min-height: var(--lp-target-min);
+  padding: 0 var(--lp-space-3);
+  font-family: var(--lp-font-display);
+  font-size: var(--lp-text-body);
+  color: var(--lp-ink);
+  background: var(--lp-paper);
+  border: 3px solid var(--lp-ink);
+  border-radius: 12px;
+}
+
+.shareline,
+.ranks {
+  font-family: var(--lp-font-mono);
+  font-size: var(--lp-text-badge);
+  color: var(--lp-cyan);
+}
+
+.ranks {
+  margin: var(--lp-space-2) 0 0;
+  padding-left: var(--lp-space-6);
+}
+
+@media (max-width: 520px) {
+  .hud-chip strong {
+    font-size: 1.25rem;
+  }
+}
+
+/* WCAG 2.2 2.3.3: honor reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .game-nav a,
+  .btn {
+    transition: none;
+  }
+}

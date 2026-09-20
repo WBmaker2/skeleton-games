@@ -1,5 +1,5 @@
 export class FpsMonitor {
-  fps = 60;
+  fps = 30;
   degraded = false;
   private last: number | null = null;
   private lowSince: number | null = null;
@@ -22,7 +22,7 @@ export class FpsMonitor {
   }
 
   reset(): void {
-    this.fps = 60;
+    this.fps = 30;
     this.degraded = false;
     this.last = null;
     this.lowSince = null;

@@ -1,12 +1,11 @@
 import { parseHash } from './ui/router';
 import type { GameId } from './ui/router';
-import { createGame, defaultCalibration, selectEngineKind } from './ui/app';
+import { createGame, defaultCalibration } from './ui/app';
 import type { PlayableId } from './ui/app';
 import { FruitNinja } from './game/fruit-ninja';
 import { BodyABC } from './game/body-abc';
 import { MoveNetAdapter } from './pose/movenet-adapter';
 import { MediaPipeAdapter } from './pose/mediapipe-adapter';
-import { FallbackEngine } from './pose/fallback-engine';
 import type { PoseEngine } from './pose/pose-engine';
 import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
@@ -15,6 +14,15 @@ import { beep } from './ui/feedback';
 import { saveScore, shareLink, topScores } from './game/storage';
 import type { ScoreBoard } from './game/engine';
 import { renderLanding } from './ui/landing';
+import { getPreferredCamera, listCameras, setPreferredCamera } from './ui/camera';
+import './ui/game.css';
+
+const GAME_NAMES: Record<PlayableId, string> = {
+  fruit: '과일 닌자 몸버전',
+  squat: '스쿼트 러너',
+  math: '점프 수학 퀴즈',
+  abc: '몸으로 ABC'
+};
 
 function gameIdOr(id: GameId): PlayableId {
   return id === 'home' ? 'fruit' : id;
@@ -69,53 +77,93 @@ export function boot(): void {
     }
     const id = gameIdOr(parseHash(window.location.hash));
     // WCAG 2.4.2: page title matches the current route.
-    document.title = `${({ fruit: '과일 닌자 몸버전', squat: '스쿼트 러너', math: '점프 수학 퀴즈', abc: '몸으로 ABC' })[id]} | Skeleton Play`;
+    document.title = `${GAME_NAMES[id]} | Skeleton Play`;
+    // WCAG: game screen landmarks + heading order (h1 game name).
     app.innerHTML =
-      `<nav><a href="#/fruit">과일</a> <a href="#/squat">스쿼트</a> <a href="#/math">수학</a> <a href="#/abc">ABC</a></nav>` +
-      `<p data-testid="route">${id}</p>` +
-      `<video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas>` +
-      `<p id="hud">준비 중…</p><p id="fps"></p><div id="calib"><p id="calibmsg"></p><button id="skip">스킵하고 시작</button></div>` +
-      `<p>카메라 거부 시 키보드 모드: 방향키/WASD=이동, 스페이스=손들기, 포인터 이동도 가능</p>` +
-      `<p>공유: <span id="share"></span></p><ol id="ranks"></ol>`;
+      `<div class="game-screen"><div class="game-inner">` +
+      `<header class="game-top"><p class="game-kicker">Skeleton Play</p>` +
+      `<h1 class="game-title">${GAME_NAMES[id]}</h1>` +
+      `<nav class="game-nav" aria-label="게임 이동"><a href="#/fruit">과일</a> <a href="#/squat">스쿼트</a> <a href="#/math">수학</a> <a href="#/abc">ABC</a></nav></header>` +
+      `<main aria-label="게임 화면">` +
+      `<p data-testid="route" hidden>${id}</p>` +
+      `<div class="stage-frame"><video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas></div>` +
+      `<section class="hud" aria-label="점수판">` +
+      `<div class="hud-chip"><span>점수</span><strong id="score">0</strong></div>` +
+      `<div class="hud-chip"><span>콤보</span><strong id="combo">0</strong></div>` +
+      `<div class="hud-chip"><span>상태</span><strong id="fps">준비 중</strong></div></section>` +
+      `<p id="hud" class="hud-msg">준비 중…</p>` +
+      `<div id="calib" class="overlay"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
+      `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
+      `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
+      `<p class="shareline">공유: <span id="share"></span></p><ol id="ranks" class="ranks"></ol>` +
+      `</main></div></div>`;
     void start(id);
+  };
+  // Device labels need HTML-escaping (browser-provided strings).
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // 카메라 선택 드롭다운을 채우고, 변경 시 저장 후 같은 게임을 다시 시작한다.
+  const wireCameraSelect = async (id: PlayableId): Promise<void> => {
+    const sel = document.getElementById('camsel') as HTMLSelectElement | null;
+    if (!sel) return;
+    const cams = await listCameras();
+    sel.innerHTML =
+      cams.length > 0
+        ? cams.map((c) => `<option value="${c.deviceId}">${esc(c.label)}</option>`).join('')
+        : `<option value="">카메라 없음</option>`;
+    const preferred = getPreferredCamera();
+    if (preferred && cams.some((c) => c.deviceId === preferred)) sel.value = preferred;
+    sel.onchange = () => {
+      setPreferredCamera(sel.value);
+      void start(id);
+    };
   };
   const start = async (id: PlayableId) => {
     const hud = document.getElementById('hud');
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo');
     const fpsEl = document.getElementById('fps');
     const overlay = document.getElementById('calib');
     const skip = document.getElementById('skip');
+    const retry = document.getElementById('retry');
     skip?.addEventListener('click', () => {
       if (overlay) (overlay as HTMLElement & { skipped?: boolean }).skipped = true;
     });
+    // 재인식 버튼: 같은 게임을 처음부터 다시 시도한다.
+    retry?.addEventListener('click', () => {
+      void start(id);
+    });
     const game = createGame(id);
-    const video = await openCamera();
-    const cameraOk = video !== null;
-    const kind = selectEngineKind(cameraOk);
-    if (kind === 'fallback') {
-      const fb = new FallbackEngine();
-      await fb.load();
-      fb.attach(app);
-      engine = fb;
-    } else if (id === 'abc') {
-      engine = new MediaPipeAdapter();
-      try {
-        await engine.load();
-      } catch {
-        const fb = new FallbackEngine();
-        await fb.load();
-        fb.attach(app);
-        engine = fb;
+    wireCameraSelect(id);
+    // 카메라 전용: 키보드·포인터 폴백 없음. 실패하면 재인식 UI를 보여준다.
+    const showCamError = (msg: string): void => {
+      const overlay = document.getElementById('calib');
+      const msgEl = document.getElementById('calibmsg');
+      const retry = document.getElementById('retry');
+      const skipBtn = document.getElementById('skip');
+      if (msgEl) msgEl.textContent = msg;
+      if (overlay) overlay.classList.add('overlay-error');
+      if (skipBtn) skipBtn.hidden = true;
+      if (retry) {
+        retry.hidden = false;
+        retry.focus();
       }
-    } else {
-      engine = new MoveNetAdapter();
-      try {
-        await engine.load();
-      } catch {
-        const fb = new FallbackEngine();
-        await fb.load();
-        fb.attach(app);
-        engine = fb;
-      }
+      const hud = document.getElementById('hud');
+      if (hud) hud.textContent = msg;
+    };
+    const video = await openCamera(getPreferredCamera() ?? undefined);
+    if (!video) {
+      showCamError('카메라를 찾지 못했어요. 카메라를 연결하고 아래 버튼을 눌러주세요.');
+      return;
+    }
+    let engine: PoseEngine;
+    try {
+      engine = id === 'abc' ? new MediaPipeAdapter() : new MoveNetAdapter();
+      await engine.load();
+    } catch {
+      showCamError('인식 모델을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요.');
+      return;
     }
     const cal = overlay ? await collectCalibration(engine, video, overlay) : defaultCalibration();
     overlay?.remove();
@@ -143,6 +191,8 @@ export function boot(): void {
         for (const e of events) {
           beep(e.type === 'wrong' || e.type === 'bomb' ? 'miss' : e.type.startsWith('pose') || e.type === 'correct' ? 'win' : 'hit');
           if (hud) hud.textContent = `${e.label} — ${board.score}점 (콤보 ${board.combo})`;
+          if (scoreEl) scoreEl.textContent = String(board.score);
+          if (comboEl) comboEl.textContent = String(board.combo);
         }
       },
       onDegrade: (fps) => {
@@ -162,13 +212,17 @@ export function boot(): void {
   render();
 }
 
-export async function openCamera(): Promise<HTMLVideoElement | null> {
+export async function openCamera(deviceId?: string): Promise<HTMLVideoElement | null> {
   const video = document.getElementById('cam') as HTMLVideoElement | null;
   if (!video) return null;
-  const attempts: MediaTrackConstraints[] = [
+  // 저장된 카메라가 있으면 먼저 정확히 지정해서 시도한다.
+  const attempts: MediaTrackConstraints[] = deviceId
+    ? [{ deviceId: { exact: deviceId }, width: 1280, height: 720 }]
+    : [];
+  attempts.push(
     { width: 1280, height: 720, facingMode: 'user' },
     { width: 640, height: 480 }
-  ];
+  );
   for (const vc of attempts) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });

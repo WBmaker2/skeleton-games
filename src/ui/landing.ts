@@ -99,6 +99,6 @@ export function renderLanding(app: HTMLElement): void {
     + `<main aria-label="게임 목록"><ul class="landing__grid">`
     + LANDING_GAMES.map(card).join('')
     + `</ul></main>`
-    + `<footer><p class="landing__foot">TIP: 각 게임 화면에서도 키보드(방향키·스페이스)로 놀 수 있어요.</p></footer>`
+    + `<footer><p class="landing__foot">TIP: 카메라 앞에 서서 온몸으로 놀아보세요. 카메라는 게임 화면에서 바꿀 수 있어요.</p></footer>`
     + `</div></div>`;
 }

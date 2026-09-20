@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FpsMonitor } from '../src/perf/fps-monitor';
 
 describe('FpsMonitor', () => {
-  it('stays healthy at 60fps', () => {
+  it('stays healthy at display rate', () => {
     const m = new FpsMonitor();
     for (let i = 0; i < 120; i++) m.sample(i * 16.7);
     expect(m.degraded).toBe(false);
@@ -19,6 +19,6 @@ describe('FpsMonitor', () => {
     for (let i = 0; i < 80; i++) m.sample(i * 200);
     m.reset();
     expect(m.degraded).toBe(false);
-    expect(m.fps).toBe(60);
+    expect(m.fps).toBe(30);
   });
 });

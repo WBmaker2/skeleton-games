@@ -15,10 +15,6 @@ export function createGame(id: PlayableId): PlayableGame {
   return new FruitNinja();
 }
 
-export function selectEngineKind(cameraOk: boolean): 'camera' | 'fallback' {
-  return cameraOk ? 'camera' : 'fallback';
-}
-
 export function defaultCalibration(): Calibration {
   return { scale: 1, centerX: 320, mode: 'seated' as PoseMode, shoulderWidth: 100 };
 }

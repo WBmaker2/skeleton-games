@@ -28,6 +28,7 @@ export class GameLoop {
   private raf = 0;
   private running = false;
   private lastMs = 0;
+  private lastInferMs = 0;
   private monitor = new FpsMonitor();
   private frames = 0;
   private dummyVideo: HTMLVideoElement | null = null;
@@ -44,12 +45,16 @@ export class GameLoop {
     this.monitor.reset();
     this.degradedNotified = false;
     this.lastMs = 0;
+    this.lastInferMs = 0;
     const tick = async (nowMs: number): Promise<void> => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(tick);
       if (this.lastMs === 0) this.lastMs = nowMs;
       const dt = Math.min(100, Math.max(0, nowMs - this.lastMs));
       this.lastMs = nowMs;
+      // 30fps 스로틀: 디스플레이 주사율과 무관하게 추론은 33ms 간격으로만 수행.
+      if (nowMs - this.lastInferMs < 33) return;
+      this.lastInferMs = nowMs;
       this.monitor.sample(nowMs);
       if (this.monitor.degraded && !this.degradedNotified) {
         this.degradedNotified = true;
