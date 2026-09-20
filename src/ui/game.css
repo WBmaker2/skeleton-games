@@ -221,6 +221,18 @@
   color: var(--lp-leaf-tint);
 }
 
+.helprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lp-space-2);
+  margin: var(--lp-space-4) 0 0;
+}
+
+.helprow .btn-small {
+  color: var(--lp-leaf-tint);
+  border-color: #3a4f63;
+}
+
 .ranks {
   margin: var(--lp-space-2) 0 0;
   padding-left: var(--lp-space-6);

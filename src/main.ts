@@ -13,7 +13,10 @@ import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
 import { saveScore, shareLink, topScores } from './game/storage';
 import type { ScoreBoard } from './game/engine';
-import { renderLanding } from './ui/landing';
+import updateLogRaw from '../docs/UPDATELOG.md';
+import { openModal, parseUpdateLog, updateLogHTML } from './ui/modal';
+import { RULES } from './ui/help';
+import { wireUpdateLog } from './ui/landing';
 import { getPreferredCamera, listCameras, setPreferredCamera } from './ui/camera';
 import { fitStageToVideo } from './ui/stage';
 import './ui/game.css';
@@ -105,7 +108,11 @@ export function boot(): void {
       `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
       `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
       `<p class="shareline">공유: <span id="share"></span></p><ol id="ranks" class="ranks"></ol>` +
+      `<p class="helprow"><button type="button" id="howto" class="btn-small">게임 방법</button> ` +
+      `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>` +
       `</main></div></div>`;
+    wireUpdateLog(app);
+    wireHowTo(app, id);
     void start(id);
   };
   // Device labels need HTML-escaping (browser-provided strings).
@@ -128,7 +135,17 @@ export function boot(): void {
       void start(id);
     };
   };
-  const start = async (id: PlayableId) => {
+  // 게임 방법 버튼 → 해당 게임의 플레이 방법 모달.
+  const wireHowTo = (root: ParentNode, id: PlayableId): void => {
+    root.querySelector('#howto')?.addEventListener('click', () => {
+      const help = RULES[id];
+      openModal({
+        title: `${help.name} 게임 방법`,
+        bodyHTML:
+          `<ol>` + help.steps.map((s) => `<li>${s}</li>`).join('') + `</ol>`
+      });
+    });
+  };
     const hud = document.getElementById('hud');
     const scoreEl = document.getElementById('score');
     const comboEl = document.getElementById('combo');

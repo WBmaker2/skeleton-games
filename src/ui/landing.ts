@@ -1,5 +1,7 @@
 import './theme.css';
 import './landing.css';
+import updateLogRaw from '../../docs/UPDATELOG.md';
+import { openModal, parseUpdateLog, updateLogHTML } from './modal';
 
 export interface LandingGame {
   id: 'fruit' | 'squat' | 'math' | 'abc' | 'star' | 'balloon' | 'zombie' | 'dance' | 'simon' | 'yoga' | 'duo' | 'recycle';
@@ -179,9 +181,11 @@ export function renderLanding(app: HTMLElement): void {
     + `<main aria-label="게임 목록"><ul class="landing__grid">`
     + LANDING_GAMES.map(card).join('')
     + `</ul></main>`
-    + `<footer><p class="landing__foot">TIP: 카메라 앞에 서서 온몸으로 놀아보세요. 카메라는 게임 화면에서 바꿀 수 있어요.</p>`
+    + `<footer><p class="landing__foot">TIP: 카메라 앞에 서서 온몸으로 놀아보세요. 카메라는 게임 화면에서 바꿀 수 있어요. `
+    + `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>`
     + `<p class="landing__readiness" id="readiness">인식 모델 확인 중…</p></footer>`
     + `</div></div>`;
+  wireUpdateLog();
   void refreshReadiness(app);
 }
 
@@ -195,4 +199,15 @@ async function refreshReadiness(app: HTMLElement): Promise<void> {
   } catch {
     el.textContent = '인식 모델 확인 중…';
   }
+}
+
+// 업데이트 내역 버튼 → 날짜별 모달. 데이터는 docs/UPDATELOG.md.
+export function wireUpdateLog(root: ParentNode = document): void {
+  root.querySelector('#updatelog')?.addEventListener('click', () => {
+    openModal({
+      title: '업데이트 내역',
+      bodyHTML: updateLogHTML(parseUpdateLog(updateLogRaw))
+    });
+  });
+}
 }
