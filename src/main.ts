@@ -15,6 +15,7 @@ import { saveScore, shareLink, topScores } from './game/storage';
 import type { ScoreBoard } from './game/engine';
 import { renderLanding } from './ui/landing';
 import { getPreferredCamera, listCameras, setPreferredCamera } from './ui/camera';
+import { fitStageToVideo } from './ui/stage';
 import './ui/game.css';
 
 const GAME_NAMES: Record<PlayableId, string> = {
@@ -181,6 +182,8 @@ export function boot(): void {
     current = { id, board: game.board };
     const canvas = document.getElementById('stage') as HTMLCanvasElement | null;
     if (!canvas) return;
+    // 캔버스 좌표계를 영상 해상도에 맞춰 스켈레톤 어긋남을 제거한다.
+    fitStageToVideo(canvas, video.videoWidth, video.videoHeight);
     const share = document.getElementById('share');
     if (share) share.textContent = shareLink(id);
     const showRanks = () => {

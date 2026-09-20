@@ -70,14 +70,17 @@ export class MediaPipeAdapter implements PoseEngine {
     if (!this.landmarker) throw new Error('MediaPipe not loaded. Call load() first.');
     const res = this.landmarker.detectForVideo(video, performance.now());
     const pts = res.landmarks[0] ?? [];
+    const w = video.videoWidth || 640;
+    const h = video.videoHeight || 480;
     return {
-      width: video.videoWidth || 640,
-      height: video.videoHeight || 480,
+      width: w,
+      height: h,
       timestamp: performance.now(),
       keypoints: pts.map((p, i) => ({
         name: landmarkName(i),
-        x: p.x * (video.videoWidth || 640),
-        y: p.y * (video.videoHeight || 480),
+        // MoveNet의 flipHorizontal과 동일한 셀카 미러 (엔진 간 좌표계 일치).
+        x: w - p.x * w,
+        y: p.y * h,
         score: 1
       }))
     };

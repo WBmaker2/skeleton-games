@@ -88,6 +88,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 셀카 미러: 모델 좌표(flipHorizontal)와 동일하게 양쪽을 함께 반전.
+   * 한쪽만 반전하면 좌우가 어긋나 보이므로 반드시 쌍으로 유지. */
+  transform: scaleX(-1);
 }
 
 /* Scoreboard chips: shared shell, one metric each */
