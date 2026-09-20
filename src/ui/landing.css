@@ -1,21 +1,20 @@
-/* Landing screen — component metrics + screen layout metrics.
- * Structure: header (headline) + main (card grid). Patterns on every surface. */
+/* Landing screen — compact 4x3 arcade shelf on warm paper.
+ * Left-aligned header, single accent, soft tinted shadows, subtle grain. */
 
-/* Named screen metrics (one-off decorative values stay here, not in markup) */
 .landing {
-  --landing-max: 1080px;
-  --landing-gap: var(--lp-space-6);
+  --landing-max: 1200px;
+  --landing-gap: var(--lp-space-4);
   --landing-pad: var(--lp-space-6);
-  --landing-dots: radial-gradient(circle, var(--lp-pink) 2px, transparent 2.5px);
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
-  padding: var(--landing-pad);
+  padding: var(--landing-pad) var(--landing-pad) var(--lp-space-12);
   box-sizing: border-box;
-  color: var(--lp-paper);
-  background-color: var(--lp-night);
-  background-image: var(--landing-dots);
-  background-size: 28px 28px;
-  font-family: var(--lp-font-display);
+  color: var(--lp-ink);
+  background-color: var(--lp-paper);
+  background-image:
+    radial-gradient(1200px 480px at 85% -120px, var(--lp-leaf-tint), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.19 0 0 0 0 0.24 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  font-family: var(--lp-font-body);
 }
 
 .landing__inner {
@@ -24,84 +23,85 @@
 }
 
 .landing__kicker {
-  font-family: var(--lp-font-serif);
-  font-style: italic;
-  color: var(--lp-cyan);
   margin: 0 0 var(--lp-space-2);
-  font-size: var(--lp-text-body);
+  font-size: var(--lp-text-label);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-leaf-deep);
 }
 
 .landing__title {
-  font-size: var(--lp-text-hero);
-  line-height: 1.05;
   margin: 0 0 var(--lp-space-2);
-  color: var(--lp-yellow);
-  text-shadow: 4px 4px 0 var(--lp-pink);
-  letter-spacing: -0.01em;
+  max-width: 22ch;
+  font-family: var(--lp-font-display);
+  font-size: var(--lp-text-hero);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  color: var(--lp-ink);
 }
 
 .landing__sub {
-  font-size: var(--lp-text-body);
   margin: 0 0 var(--lp-space-8);
-  max-width: 44ch;
+  max-width: 62ch;
+  font-size: var(--lp-text-body);
+  line-height: 1.65;
+  color: var(--lp-ink-soft);
 }
 
-/* Card grid: 2 columns on desktop, 1 column below 900px (derived, not nudged) */
+/* Shelf: 4 columns on desktop (12 cards = 4x3), 2 on tablet, 1 on phones */
 .landing__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--landing-gap);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-/* Shared game-card shell; per-card accent via --card-accent */
+/* Shared card shell; staggered entry via --i set inline per card */
 .game-card {
-  --card-accent: var(--lp-pink);
-  display: block;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   min-height: var(--lp-target-min);
   padding: var(--lp-card-pad);
   color: var(--lp-ink);
-  background-color: var(--lp-paper);
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent 0 14px,
-    color-mix(in srgb, var(--card-accent) 12%, transparent) 14px 28px
-  );
-  border: var(--lp-card-border) solid var(--lp-ink);
+  background: var(--lp-card);
+  border: 1px solid var(--lp-line);
   border-radius: var(--lp-card-radius);
   box-shadow: var(--lp-card-shadow);
   text-decoration: none;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  animation: card-in 420ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 .game-card:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(42, 80, 52, 0.18);
 }
 
 .game-card:active {
-  transform: translate(4px, 4px);
-  box-shadow: 2px 2px 0 var(--card-accent);
+  transform: translateY(1px) scale(0.99);
 }
 
 /* WCAG 2.2 2.4.7: visible focus at every stop */
 .game-card:focus-visible {
   outline: var(--lp-focus-ring);
-  outline-offset: 4px;
+  outline-offset: 3px;
 }
 
-/* Art frame: generated art goes here; dotted sticker frame behind it */
+/* Art frame: generated art goes here; soft tint wash behind it */
 .art-frame {
   position: relative;
-  aspect-ratio: 1 / 1;
-  margin: 0 0 var(--lp-space-4);
+  aspect-ratio: 4 / 3;
+  margin: 0 0 var(--lp-space-3);
   overflow: hidden;
-  background-color: var(--card-accent);
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.85) 2.5px, transparent 3px);
-  background-size: 18px 18px;
-  border: var(--lp-card-border) solid var(--lp-ink);
+  background: var(--lp-leaf-wash);
+  border: 1px solid var(--lp-line);
   border-radius: calc(var(--lp-card-radius) - 8px);
 }
 
@@ -121,52 +121,72 @@
 }
 
 .game-card__badge {
-  display: inline-block;
   margin: 0 0 var(--lp-space-2);
-  padding: var(--lp-space-1) var(--lp-space-3);
-  font-family: var(--lp-font-mono);
-  font-size: var(--lp-text-badge);
-  font-weight: bold;
-  color: var(--lp-ink);
-  background: var(--lp-yellow);
-  border: 3px solid var(--lp-ink);
-  border-radius: 999px;
+  font-size: var(--lp-text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-leaf-deep);
 }
 
 .game-card__title {
-  margin: 0 0 var(--lp-space-2);
+  margin: 0 0 var(--lp-space-1);
+  font-family: var(--lp-font-display);
   font-size: var(--lp-text-card-title);
-  line-height: 1.2;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .game-card__rule {
-  margin: 0 0 var(--lp-space-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 var(--lp-space-3);
   font-size: var(--lp-text-body);
-  line-height: 1.5;
+  line-height: 1.6;
+  color: var(--lp-ink-soft);
 }
 
 .game-card__cta {
-  display: inline-block;
-  margin-top: var(--lp-space-2);
-  padding: var(--lp-space-3) var(--lp-space-6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: var(--lp-space-2) var(--lp-space-4);
   min-height: var(--lp-target-min);
   box-sizing: border-box;
   font-size: var(--lp-text-body);
-  font-weight: bold;
-  color: var(--lp-paper);
-  background: var(--lp-violet);
-  border: 3px solid var(--lp-ink);
-  border-radius: 999px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--lp-leaf-deep);
+  border-radius: 12px;
 }
 
 .landing__foot {
   margin: var(--lp-space-8) 0 0;
-  font-family: var(--lp-font-mono);
-  font-size: var(--lp-text-badge);
-  color: var(--lp-cyan);
+  font-size: var(--lp-text-body);
+  color: var(--lp-ink-soft);
 }
 
-@media (max-width: 900px) {
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .landing__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
   .landing__grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -174,10 +194,12 @@
 
 /* WCAG 2.2 2.3.3: honor reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .game-card,
+  .game-card {
+    animation: none;
+    transition: none;
+  }
   .game-card:hover,
   .game-card:active {
     transform: none;
-    transition: none;
   }
 }

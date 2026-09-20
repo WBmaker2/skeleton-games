@@ -21,7 +21,15 @@ const GAME_NAMES: Record<PlayableId, string> = {
   fruit: '과일 닌자 몸버전',
   squat: '스쿼트 러너',
   math: '점프 수학 퀴즈',
-  abc: '몸으로 ABC'
+  abc: '몸으로 ABC',
+  star: '별잡기 스트레칭',
+  balloon: '풍선 헤딩',
+  zombie: '좀비 스텝 피하기',
+  dance: '리듬 댄스 카피',
+  simon: '사이먼 AI 선생님',
+  yoga: '요가 거울',
+  duo: '2인 별자리',
+  recycle: '분리수거 스트레칭'
 };
 
 function gameIdOr(id: GameId): PlayableId {
@@ -83,7 +91,7 @@ export function boot(): void {
       `<div class="game-screen"><div class="game-inner">` +
       `<header class="game-top"><p class="game-kicker">Skeleton Play</p>` +
       `<h1 class="game-title">${GAME_NAMES[id]}</h1>` +
-      `<nav class="game-nav" aria-label="게임 이동"><a href="#/fruit">과일</a> <a href="#/squat">스쿼트</a> <a href="#/math">수학</a> <a href="#/abc">ABC</a></nav></header>` +
+      `<nav class="game-nav" aria-label="게임 이동"><a href="#/">← 모든 게임</a></nav></header>` +
       `<main aria-label="게임 화면">` +
       `<p data-testid="route" hidden>${id}</p>` +
       `<div class="stage-frame"><video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas></div>` +
@@ -189,7 +197,14 @@ export function boot(): void {
       showSkeleton: true,
       onEvent: (events, board) => {
         for (const e of events) {
-          beep(e.type === 'wrong' || e.type === 'bomb' ? 'miss' : e.type.startsWith('pose') || e.type === 'correct' ? 'win' : 'hit');
+          beep(
+            e.type === 'wrong' || e.type === 'bomb' || e.type === 'miss' ||
+              e.type === 'timeout' || e.type === 'caught' || e.type === 'drop' || e.type === 'mixed'
+              ? 'miss'
+              : e.type.startsWith('pose') || e.type === 'correct' || e.type === 'pair' || e.type === 'sorted'
+                ? 'win'
+                : 'hit'
+          );
           if (hud) hud.textContent = `${e.label} — ${board.score}점 (콤보 ${board.combo})`;
           if (scoreEl) scoreEl.textContent = String(board.score);
           if (comboEl) comboEl.textContent = String(board.combo);

@@ -1,26 +1,28 @@
-/* Design tokens — Chaotic Maximalism anchor for the kids' landing.
- * All raw color / type / spacing math lives here. View code uses variables. */
+/* Design tokens — calm editorial refresh.
+ * Warm paper base, slate ink, ONE green accent with same-hue tints.
+ * Saturation stays low; neutrals share one warm-gray family. */
 
 :root {
-  /* Palette (clashing pastels + neons, one role each) */
-  --lp-pink: #ff71ce;
-  --lp-yellow: #dfff00;
-  --lp-cyan: #00ffff;
-  --lp-violet: #5d34d0;
-  --lp-night: #2a0a4a;
-  --lp-ink: #14081f;
-  --lp-paper: #ffffff;
+  /* Palette: single accent + tints, warm neutrals */
+  --lp-leaf: #3d9e57;
+  --lp-leaf-deep: #2a7240;
+  --lp-leaf-tint: #e9f4ec;
+  --lp-leaf-wash: #f2f8f3;
+  --lp-paper: #faf6ef;
+  --lp-ink: #22303c;
+  --lp-ink-soft: #5b6b78;
+  --lp-card: #ffffff;
+  --lp-line: #e3dcc9;
 
-  /* Typography: three colliding registers, system stacks only (offline-safe) */
-  --lp-font-display: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", "NanumSquareRound", "Malgun Gothic", sans-serif;
-  --lp-font-serif: Georgia, "Noto Serif KR", "Batang", serif;
-  --lp-font-mono: "Courier New", "Noto Sans Mono", monospace;
+  /* Typography: serif display + sans body (system stacks, offline-safe) */
+  --lp-font-display: Georgia, "Noto Serif KR", "Batang", serif;
+  --lp-font-body: -apple-system, "Pretendard", "Malgun Gothic", "Segoe UI", sans-serif;
 
   /* Type scale */
-  --lp-text-hero: clamp(2.5rem, 8vw, 5rem);
-  --lp-text-card-title: 1.5rem;
-  --lp-text-body: 1.0625rem;
-  --lp-text-badge: 0.875rem;
+  --lp-text-hero: clamp(2rem, 4.5vw, 3.25rem);
+  --lp-text-card-title: 1.05rem;
+  --lp-text-body: 0.95rem;
+  --lp-text-label: 0.75rem;
 
   /* Spacing scale */
   --lp-space-1: 4px;
@@ -32,12 +34,11 @@
   --lp-space-12: 48px;
 
   /* Card shell metrics (shared by all game cards) */
-  --lp-card-radius: 20px;
-  --lp-card-border: 4px;
-  --lp-card-pad: var(--lp-space-6);
-  --lp-card-shadow: 8px 8px 0 var(--lp-card-accent, var(--lp-pink));
+  --lp-card-radius: 18px;
+  --lp-card-pad: var(--lp-space-4);
+  --lp-card-shadow: 0 10px 24px rgba(42, 80, 52, 0.12);
 
   /* Touch + focus */
   --lp-target-min: 48px;
-  --lp-focus-ring: 4px solid var(--lp-cyan);
+  --lp-focus-ring: 3px solid var(--lp-leaf-deep);
 }

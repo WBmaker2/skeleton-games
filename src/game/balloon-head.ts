@@ -1,0 +1,59 @@
+import type { PoseFrame } from '../pose/types';
+import { getByName } from '../pose/geometry';
+import type { Game, GameEvent } from './types';
+import { ScoreBoard } from './engine';
+
+export interface Balloon {
+  x: number;
+  y: number;
+  vy: number;
+  alive: boolean;
+}
+
+// 풍선 헤딩: 머리로 풍선을 떨어뜨리지 않기. 목·코어.
+export class BalloonHead implements Game {
+  id = 'balloon';
+  balloon: Balloon = { x: 320, y: 80, vy: 60, alive: true };
+  board = new ScoreBoard();
+  hits = 0;
+  private running = false;
+
+  start(): void {
+    this.running = true;
+    this.board.reset();
+    this.hits = 0;
+    this.balloon = { x: 320, y: 80, vy: 60, alive: true };
+  }
+  stop(): void {
+    this.running = false;
+  }
+  private headOf(frame: PoseFrame): { x: number; y: number } | null {
+    const nose = getByName(frame, 'nose');
+    if (nose && (nose.score ?? 0) > 0.3) return nose;
+    const ls = getByName(frame, 'left_shoulder');
+    const rs = getByName(frame, 'right_shoulder');
+    if (ls && rs) return { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 - 40 };
+    return null;
+  }
+  tick(frame: PoseFrame, dtMs: number): GameEvent[] {
+    if (!this.running) return [];
+    const dt = dtMs / 1000;
+    const b = this.balloon;
+    b.vy += 140 * dt;
+    b.y += b.vy * dt;
+    const head = this.headOf(frame);
+    if (head && Math.hypot(head.x - b.x, head.y - b.y) < 54) {
+      b.vy = -330;
+      this.hits += 1;
+      this.board.comboHit();
+      this.board.add(5);
+      return [{ type: 'bump', points: 5, label: `${this.hits}번 받았어요!` }];
+    }
+    if (b.y > 520) {
+      this.balloon = { x: 80 + Math.random() * 480, y: -20, vy: 60, alive: true };
+      this.board.comboMiss();
+      return [{ type: 'drop', points: 0, label: '풍선이 떨어졌어요' }];
+    }
+    return [];
+  }
+}

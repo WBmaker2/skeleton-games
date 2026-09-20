@@ -1,9 +1,16 @@
-export type GameId = 'fruit' | 'squat' | 'math' | 'abc' | 'home';
+export type GameId =
+  | 'fruit' | 'squat' | 'math' | 'abc'
+  | 'star' | 'balloon' | 'zombie' | 'dance'
+  | 'simon' | 'yoga' | 'duo' | 'recycle'
+  | 'home';
+
+const ROUTES: GameId[] = [
+  'fruit', 'squat', 'math', 'abc',
+  'star', 'balloon', 'zombie', 'dance',
+  'simon', 'yoga', 'duo', 'recycle'
+];
 
 export function parseHash(hash: string): GameId {
-  if (hash === '#/fruit') return 'fruit';
-  if (hash === '#/squat') return 'squat';
-  if (hash === '#/math') return 'math';
-  if (hash === '#/abc') return 'abc';
-  return 'home';
+  const id = hash.replace(/^#\//, '') as GameId;
+  return (ROUTES as string[]).includes(id) ? id : 'home';
 }

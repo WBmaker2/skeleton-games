@@ -22,7 +22,7 @@ export function poseSimilarity(current: Angles, target: Angles): number {
   return sims.reduce((a, b) => a + b, 0) / sims.length;
 }
 
-function anglesFromFrame(frame: PoseFrame): Angles {
+export function anglesFromFrame(frame: PoseFrame): Angles {
   // MoveNet 모드: 손목 높이만으로 근사 (상체모드 지원)
   const by = new Map(frame.keypoints.map((k) => [k.name, k]));
   const ls = by.get('left_shoulder');
