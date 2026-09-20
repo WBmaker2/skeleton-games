@@ -23,7 +23,8 @@
 
 ## 사용자 측 잔여 단계 (실기기·계정 필요)
 
-1. GitHub 저장소 생성 (이름이 `skeleton-idea`가 아니면 base 수정 후 재빌드)
-2. 푸시 후 `dist/`를 `gh-pages` 브랜치에 게시 (DEPLOY.md 절차)
+1. ~~GitHub 저장소 생성~~ 완료: https://github.com/WBmaker2/skeleton-games (public)
+2. ~~`dist/`를 `gh-pages` 브랜치에 게시~~ 완료 — 라이브:
+   https://WBmaker2.github.io/skeleton-games/ (index/manifest/icon 200 확인)
 3. 실기기 QA (`docs/QA-CHECKLIST.md` 10항목) 실행 후 결과 기록
 4. 문제 발견 시 이슈로 등록 → 다음 플랜에서 수정
