@@ -26,5 +26,6 @@
 1. ~~GitHub 저장소 생성~~ 완료: https://github.com/WBmaker2/skeleton-games (public)
 2. ~~`dist/`를 `gh-pages` 브랜치에 게시~~ 완료 — 라이브:
    https://WBmaker2.github.io/skeleton-games/ (index/manifest/icon 200 확인)
+   - 재배포: 키즈 랜딩페이지 반영 (게임 선택 카드 4종, 실측 title 확인)
 3. 실기기 QA (`docs/QA-CHECKLIST.md` 10항목) 실행 후 결과 기록
 4. 문제 발견 시 이슈로 등록 → 다음 플랜에서 수정
