@@ -2,6 +2,10 @@
 // tests/fallback-engine.test.ts
 import { describe, expect, it } from 'vitest';
 import { FallbackEngine } from '../src/pose/fallback-engine';
+import { bodyCenterX } from '../src/pose/geometry';
+import { kneeAngle, SquatRunner } from '../src/game/squat-runner';
+import { BodyABC } from '../src/game/body-abc';
+import type { GameEvent } from '../src/game/types';
 
 describe('FallbackEngine', () => {
   it('exposes cursor as right_wrist', async () => {
@@ -53,5 +57,35 @@ describe('FallbackEngine', () => {
     expect(e.defaultPrevented || !notCancelled).toBe(true);
     eng.detach();
     el.remove();
+  });
+  it('cursor-coupled torso puts bodyCenterX in zone 2 at x=550', async () => {
+    const eng = new FallbackEngine();
+    eng.moveTo(550, 240);
+    const frame = await eng.estimate(document.createElement('video'));
+    expect(bodyCenterX(frame)).toBeGreaterThan((frame.width * 2) / 3);
+  });
+  it('crouch yields duck, standing yields straight knees', async () => {
+    const eng = new FallbackEngine();
+    const game = new SquatRunner();
+    game.start();
+    eng.setCrouch(true);
+    const video = document.createElement('video');
+    let events: GameEvent[] = [];
+    for (let i = 0; i < 20; i++) events.push(...game.tick(await eng.estimate(video), 16));
+    expect(events.some((e) => e.type === 'duck')).toBe(true);
+    eng.setCrouch(false);
+    const frame = await eng.estimate(video);
+    expect(kneeAngle(frame, 'left')).toBeGreaterThan(150);
+    expect(kneeAngle(frame, 'right')).toBeGreaterThan(150);
+  });
+  it('high cursor completes ABC T pose', async () => {
+    const eng = new FallbackEngine();
+    eng.moveTo(320, 40);
+    const game = new BodyABC();
+    game.start();
+    const video = document.createElement('video');
+    let events: GameEvent[] = [];
+    for (let i = 0; i < 70; i++) events.push(...game.tick(await eng.estimate(video), 16));
+    expect(events.some((e) => e.type === 'pose-ok')).toBe(true);
   });
 });

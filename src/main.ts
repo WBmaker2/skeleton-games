@@ -12,15 +12,16 @@ import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
 import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
-import { drawZones } from './ui/renderer';
 import { saveScore, shareLink, topScores } from './game/storage';
+import type { ScoreBoard } from './game/engine';
 
 function gameIdOr(id: GameId): PlayableId {
   return id === 'home' ? 'fruit' : id;
 }
 
 async function collectCalibration(engine: PoseEngine, video: HTMLVideoElement | null, overlay: HTMLElement): Promise<Calibration> {
-  overlay.textContent = 'T자세로 3초간 서주세요 (스킵 가능)';
+  const msg = overlay.querySelector('#calibmsg') ?? overlay;
+  msg.textContent = 'T자세로 3초간 서주세요 (스킵 가능)';
   const frames: PoseFrame[] = [];
   const dummy = video ?? document.createElement('video');
   const started = performance.now();
@@ -43,15 +44,28 @@ export function boot(): void {
   const app = document.getElementById('app');
   if (!app) return;
   let loop: GameLoop | null = null;
+  let engine: PoseEngine | null = null;
+  let fpsTimer = 0;
+  let current: { id: PlayableId; board: ScoreBoard } | null = null;
   const render = () => {
+    if (current && current.board.score > 0) saveScore(current.id, { name: '나', score: current.board.score });
+    current = null;
+    const oldVideo = document.getElementById('cam') as HTMLVideoElement | null;
+    const oldStream = oldVideo?.srcObject as MediaStream | null;
+    if (oldStream && typeof oldStream.getTracks === 'function') oldStream.getTracks().forEach((t) => t.stop());
+    if (engine && 'detach' in engine && typeof (engine as { detach?: unknown }).detach === 'function') {
+      (engine as { detach: () => void }).detach();
+    }
+    engine = null;
     loop?.stop();
     loop = null;
+    clearInterval(fpsTimer);
     const id = gameIdOr(parseHash(window.location.hash));
     app.innerHTML =
       `<nav><a href="#/fruit">과일</a> <a href="#/squat">스쿼트</a> <a href="#/math">수학</a> <a href="#/abc">ABC</a></nav>` +
       `<p data-testid="route">${id}</p>` +
       `<video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas>` +
-      `<p id="hud">준비 중…</p><p id="fps"></p><div id="calib"><button id="skip">스킵하고 시작</button></div>` +
+      `<p id="hud">준비 중…</p><p id="fps"></p><div id="calib"><p id="calibmsg"></p><button id="skip">스킵하고 시작</button></div>` +
       `<p>카메라 거부 시 키보드 모드: 방향키/WASD=이동, 스페이스=손들기, 포인터 이동도 가능</p>` +
       `<p>공유: <span id="share"></span></p><ol id="ranks"></ol>`;
     void start(id);
@@ -68,8 +82,7 @@ export function boot(): void {
     const video = await openCamera();
     const cameraOk = video !== null;
     const kind = selectEngineKind(cameraOk);
-    let engine: PoseEngine;
-    if (kind === 'fallback' || (id === 'abc' && !cameraOk)) {
+    if (kind === 'fallback') {
       const fb = new FallbackEngine();
       await fb.load();
       fb.attach(app);
@@ -100,9 +113,9 @@ export function boot(): void {
     if (game instanceof FruitNinja) game.radiusScale = cal.scale;
     if (game instanceof BodyABC) game.mode = cal.mode;
     game.start();
+    current = { id, board: game.board };
     const canvas = document.getElementById('stage') as HTMLCanvasElement | null;
     if (!canvas) return;
-    if (id === 'math') drawZones(canvas, 640);
     const share = document.getElementById('share');
     if (share) share.textContent = shareLink(id);
     const showRanks = () => {
@@ -128,13 +141,13 @@ export function boot(): void {
       }
     });
     loop.start();
-    const fpsTimer = setInterval(() => {
+    fpsTimer = Number(setInterval(() => {
       if (!loop) {
         clearInterval(fpsTimer);
         return;
       }
       if (fpsEl && !fpsEl.textContent?.startsWith('저사양')) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드`;
-    }, 500);
+    }, 500));
   };
   window.addEventListener('hashchange', render);
   render();

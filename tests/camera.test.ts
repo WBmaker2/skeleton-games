@@ -22,6 +22,14 @@ describe('openCamera fallback chain', () => {
     const out = await openCamera();
     expect(out).toBe(video);
     expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { width: 1280, height: 720, facingMode: 'user' },
+      audio: false
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: { width: 640, height: 480 },
+      audio: false
+    });
     expect(video.srcObject).toBe(stream480);
   });
   it('returns null when all fail', async () => {

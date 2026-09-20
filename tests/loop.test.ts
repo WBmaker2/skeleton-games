@@ -69,12 +69,13 @@ describe('GameLoop', () => {
     expect(seen).toContain('slice');
     expect(cancelled).toBe(true);
   });
-  it('clamps dt to 100ms', () => {
+  it('clamps dt to 100ms', async () => {
     installRaf();
     const engine = new FakeEngine();
     engine.push({ width: 640, height: 480, timestamp: 0, keypoints: [] });
     const game = new FruitNinja();
     game.start();
+    const spy = vi.spyOn(game, 'tick');
     const canvas = document.createElement('canvas');
     const loop = new GameLoop({
       video: null,
@@ -87,7 +88,10 @@ describe('GameLoop', () => {
     loop.start();
     pump(1, 16);
     pump(1, 5000);
+    await new Promise((r) => setTimeout(r, 0));
     loop.stop();
     expect(loop.fps).toBeGreaterThanOrEqual(0);
+    expect(spy).toHaveBeenCalled();
+    expect(spy.mock.calls[spy.mock.calls.length - 1]?.[1]).toBe(100);
   });
 });

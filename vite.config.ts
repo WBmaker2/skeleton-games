@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      // Task 5: pose engines (tfjs/mediapipe) push the bundle past
+      // pose engines (tfjs/mediapipe) push the bundle past
       // workbox's 2 MiB default precache limit — raise it.
       workbox: { maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 },
       manifest: {

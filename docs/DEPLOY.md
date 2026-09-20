@@ -9,6 +9,8 @@ npm run build   # dist/ 생성
 
 `dist/` 통째로 업로드. 환경변수 없음. HTTPS 필수 (카메라·PWA).
 
+- 참고: dist 약 2.6MB (tfjs+MediaPipe 포함, workbox precache 4MiB 설정)
+
 ## GitHub Pages
 
 `vite.config.ts`에 `base: '/<repo>/'` 추가 후 build, `dist/`를 `gh-pages` 브랜치에 푸시.

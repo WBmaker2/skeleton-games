@@ -4,7 +4,7 @@ import type { Calibration, PoseFrame } from '../pose/types';
 import type { Game, GameEvent } from './types';
 import type { ScoreBoard } from './engine';
 import { FpsMonitor } from '../perf/fps-monitor';
-import { drawSkeleton } from '../ui/renderer';
+import { drawSkeleton, drawZones } from '../ui/renderer';
 
 export type GameEventHandler = (events: GameEvent[], board: { score: number; combo: number }) => void;
 
@@ -17,6 +17,7 @@ export interface LoopOpts {
   canvas: HTMLCanvasElement;
   engine: PoseEngine;
   game: LoopGame;
+  /** App owns application: radiusScale/mode 주입은 start 전, loop는 참조 보관용. */
   calibration: Calibration;
   showSkeleton: boolean;
   onEvent?: GameEventHandler;
@@ -70,6 +71,11 @@ export class GameLoop {
         } catch {
           // 렌더 실패는 루프를 멈추지 않음
         }
+      }
+      if (this.opts.showSkeleton && this.opts.game.id === 'math') {
+        try {
+          drawZones(this.opts.canvas, frame.width);
+        } catch {}
       }
       if (events.length > 0) {
         this.opts.onEvent?.(events, {
