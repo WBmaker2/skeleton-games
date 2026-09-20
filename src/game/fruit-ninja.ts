@@ -10,6 +10,7 @@ export class FruitNinja implements Game {
   id = 'fruit';
   fruits: Fruit[] = [];
   board = new ScoreBoard();
+  radiusScale = 1;
   private running = false;
   private spawnMs = 0;
 
@@ -43,7 +44,7 @@ export class FruitNinja implements Game {
     const events: GameEvent[] = [];
     for (const f of this.fruits) {
       if (!f.alive) continue;
-      const hit = wrists.some((w) => w && Math.hypot(w.x - f.x, w.y - f.y) < 48);
+      const hit = wrists.some((w) => w && Math.hypot(w.x - f.x, w.y - f.y) < 48 * this.radiusScale);
       if (hit) {
         f.alive = false;
         if (f.kind === 'fruit') {

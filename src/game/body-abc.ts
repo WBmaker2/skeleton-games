@@ -1,5 +1,5 @@
 // src/game/body-abc.ts
-import type { PoseFrame } from '../pose/types';
+import type { PoseFrame, PoseMode } from '../pose/types';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
 
@@ -38,6 +38,7 @@ function anglesFromFrame(frame: PoseFrame): Angles {
 export class BodyABC implements Game {
   id = 'abc';
   board = new ScoreBoard();
+  mode: PoseMode = 'standing';
   target: 'T' | 'Y' | 'O' | 'L' = 'T';
   holdMs = 0;
   private running = false;
