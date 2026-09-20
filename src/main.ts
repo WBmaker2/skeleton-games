@@ -14,6 +14,7 @@ import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
 import { saveScore, shareLink, topScores } from './game/storage';
 import type { ScoreBoard } from './game/engine';
+import { renderLanding } from './ui/landing';
 
 function gameIdOr(id: GameId): PlayableId {
   return id === 'home' ? 'fruit' : id;
@@ -60,7 +61,15 @@ export function boot(): void {
     loop?.stop();
     loop = null;
     clearInterval(fpsTimer);
+    // Landing: game picker. Game behavior below is untouched.
+    if (parseHash(window.location.hash) === 'home') {
+      document.title = '게임 고르기 | Skeleton Play';
+      renderLanding(app);
+      return;
+    }
     const id = gameIdOr(parseHash(window.location.hash));
+    // WCAG 2.4.2: page title matches the current route.
+    document.title = `${({ fruit: '과일 닌자 몸버전', squat: '스쿼트 러너', math: '점프 수학 퀴즈', abc: '몸으로 ABC' })[id]} | Skeleton Play`;
     app.innerHTML =
       `<nav><a href="#/fruit">과일</a> <a href="#/squat">스쿼트</a> <a href="#/math">수학</a> <a href="#/abc">ABC</a></nav>` +
       `<p data-testid="route">${id}</p>` +

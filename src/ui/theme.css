@@ -1,0 +1,43 @@
+/* Design tokens — Chaotic Maximalism anchor for the kids' landing.
+ * All raw color / type / spacing math lives here. View code uses variables. */
+
+:root {
+  /* Palette (clashing pastels + neons, one role each) */
+  --lp-pink: #ff71ce;
+  --lp-yellow: #dfff00;
+  --lp-cyan: #00ffff;
+  --lp-violet: #5d34d0;
+  --lp-night: #2a0a4a;
+  --lp-ink: #14081f;
+  --lp-paper: #ffffff;
+
+  /* Typography: three colliding registers, system stacks only (offline-safe) */
+  --lp-font-display: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", "NanumSquareRound", "Malgun Gothic", sans-serif;
+  --lp-font-serif: Georgia, "Noto Serif KR", "Batang", serif;
+  --lp-font-mono: "Courier New", "Noto Sans Mono", monospace;
+
+  /* Type scale */
+  --lp-text-hero: clamp(2.5rem, 8vw, 5rem);
+  --lp-text-card-title: 1.5rem;
+  --lp-text-body: 1.0625rem;
+  --lp-text-badge: 0.875rem;
+
+  /* Spacing scale */
+  --lp-space-1: 4px;
+  --lp-space-2: 8px;
+  --lp-space-3: 12px;
+  --lp-space-4: 16px;
+  --lp-space-6: 24px;
+  --lp-space-8: 32px;
+  --lp-space-12: 48px;
+
+  /* Card shell metrics (shared by all game cards) */
+  --lp-card-radius: 20px;
+  --lp-card-border: 4px;
+  --lp-card-pad: var(--lp-space-6);
+  --lp-card-shadow: 8px 8px 0 var(--lp-card-accent, var(--lp-pink));
+
+  /* Touch + focus */
+  --lp-target-min: 48px;
+  --lp-focus-ring: 4px solid var(--lp-cyan);
+}
