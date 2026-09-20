@@ -1,6 +1,6 @@
 // src/pose/movenet-adapter.ts
 import * as poseDetection from '@tensorflow-models/pose-detection';
-import '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 import type { PoseFrame } from './types';
 import type { PoseEngine } from './pose-engine';
 
@@ -16,19 +16,35 @@ export class MoveNetAdapter implements PoseEngine {
   private detector: poseDetection.PoseDetector | null = null;
 
   async load(): Promise<void> {
-    try {
-      this.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
-        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-        modelUrl: MOVENET_LOCAL_URL
-      });
-      return;
-    } catch (err) {
-      console.warn('[pose] local MoveNet failed, falling back to TFHub', err);
+    // 시도 순서: (현재 백엔드, 로컬) → (현재 백엔드, CDN) → (CPU, 로컬) → (CPU, CDN).
+    // WebGL 초기화 실패 기기에서도 CPU로 반드시 로드되게 한다.
+    const errors: unknown[] = [];
+    for (const backend of [tf.getBackend(), 'cpu']) {
+      try {
+        if (tf.getBackend() !== backend) {
+          await tf.setBackend(backend);
+          await tf.ready();
+        }
+        try {
+          this.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
+            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+            modelUrl: MOVENET_LOCAL_URL
+          });
+          return;
+        } catch (err) {
+          console.warn(`[pose] MoveNet local failed on ${backend}, trying CDN`, err);
+          errors.push(err);
+        }
+        this.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+        });
+        return;
+      } catch (err) {
+        console.warn(`[pose] MoveNet failed on ${backend}`, err);
+        errors.push(err);
+      }
     }
-    // Fallback: default TFHub CDN (keeps old behavior when local copy is missing).
-    this.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
-      modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-    });
+    throw errors[errors.length - 1] ?? new Error('MoveNet load failed');
   }
 
   async estimate(video: HTMLVideoElement): Promise<PoseFrame> {

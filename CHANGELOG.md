@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 (2026-09-21) — 로드 실패 제거
+
+- 백엔드 폴백: WebGL 실패 시 CPU로 자동 전환 후 재시도 (MoveNet)
+- 델리게이트 폴백: GPU 실패 시 CPU로 전환 (MediaPipe)
+- 로컬→CDN→CPU 순차 4단계 시도, 실패 원인 콘솔 기록
+- 랜딩에 인식 모델 준비 상태 표시 (모델·GPU·오프라인 여부)
+
 ## 0.4.1 (2026-09-21) — 모델 자가 호스팅
 
 - MoveNet·pose_landmarker 모델을 `public/models/`에 동봉, TFHub CDN 장애와 무관하게 로드

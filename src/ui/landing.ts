@@ -179,6 +179,20 @@ export function renderLanding(app: HTMLElement): void {
     + `<main aria-label="게임 목록"><ul class="landing__grid">`
     + LANDING_GAMES.map(card).join('')
     + `</ul></main>`
-    + `<footer><p class="landing__foot">TIP: 카메라 앞에 서서 온몸으로 놀아보세요. 카메라는 게임 화면에서 바꿀 수 있어요.</p></footer>`
+    + `<footer><p class="landing__foot">TIP: 카메라 앞에 서서 온몸으로 놀아보세요. 카메라는 게임 화면에서 바꿀 수 있어요.</p>`
+    + `<p class="landing__readiness" id="readiness">인식 모델 확인 중…</p></footer>`
     + `</div></div>`;
+  void refreshReadiness(app);
+}
+
+// 랜딩에서 인식 모델 준비 상태를 표시한다 (무거운 모델 로드는 하지 않음).
+async function refreshReadiness(app: HTMLElement): Promise<void> {
+  const el = app.querySelector('#readiness');
+  if (!el) return;
+  try {
+    const { checkReadiness, readinessMessage } = await import('./readiness');
+    el.textContent = readinessMessage(await checkReadiness());
+  } catch {
+    el.textContent = '인식 모델 확인 중…';
+  }
 }

@@ -29,9 +29,13 @@ export const POSE_TASK_LOCAL_URL = 'models/pose_landmarker_lite.task';
 const POSE_TASK_CDN_URL =
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
-async function createLandmarker(vision: unknown, modelAssetPath: string): Promise<PoseLandmarker> {
+async function createLandmarker(
+  vision: unknown,
+  modelAssetPath: string,
+  delegate: 'GPU' | 'CPU' = 'GPU'
+): Promise<PoseLandmarker> {
   return PoseLandmarker.createFromOptions(vision as Parameters<typeof PoseLandmarker.createFromOptions>[0], {
-    baseOptions: { modelAssetPath, delegate: 'GPU' },
+    baseOptions: { modelAssetPath, delegate },
     runningMode: 'VIDEO',
     numPoses: 1
   });
@@ -45,13 +49,21 @@ export class MediaPipeAdapter implements PoseEngine {
     const vision = await FilesetResolver.forVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
     );
-    try {
-      this.landmarker = await createLandmarker(vision, POSE_TASK_LOCAL_URL);
-      return;
-    } catch (err) {
-      console.warn('[pose] local task bundle failed, falling back to CDN', err);
+    // 시도 순서: (GPU, 로컬) → (GPU, CDN) → (CPU, 로컬) → (CPU, CDN).
+    // GPU 델리게이트 실패 기기에서도 CPU로 반드시 로드되게 한다.
+    const errors: unknown[] = [];
+    for (const delegate of ['GPU', 'CPU'] as const) {
+      for (const modelAssetPath of [POSE_TASK_LOCAL_URL, POSE_TASK_CDN_URL]) {
+        try {
+          this.landmarker = await createLandmarker(vision, modelAssetPath, delegate);
+          return;
+        } catch (err) {
+          console.warn(`[pose] MediaPipe ${delegate} ${modelAssetPath} failed`, err);
+          errors.push(err);
+        }
+      }
     }
-    this.landmarker = await createLandmarker(vision, POSE_TASK_CDN_URL);
+    throw errors[errors.length - 1] ?? new Error('MediaPipe load failed');
   }
 
   async estimate(video: HTMLVideoElement): Promise<PoseFrame> {

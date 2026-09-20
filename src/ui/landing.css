@@ -169,6 +169,13 @@
   color: var(--lp-ink-soft);
 }
 
+.landing__readiness {
+  margin: var(--lp-space-2) 0 0;
+  font-size: var(--lp-text-badge);
+  font-weight: 600;
+  color: var(--lp-leaf-deep);
+}
+
 @keyframes card-in {
   from {
     opacity: 0;
