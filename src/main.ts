@@ -13,7 +13,8 @@ import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
 import { saveScore, shareLink, topScores } from './game/storage';
 import type { ScoreBoard } from './game/engine';
-import updateLogRaw from '../docs/UPDATELOG.md';
+import { renderLanding } from './ui/landing';
+import updateLogRaw from '../docs/UPDATELOG.md?raw';
 import { openModal, parseUpdateLog, updateLogHTML } from './ui/modal';
 import { RULES } from './ui/help';
 import { wireUpdateLog } from './ui/landing';
@@ -146,6 +147,7 @@ export function boot(): void {
       });
     });
   };
+  const start = async (id: PlayableId) => {
     const hud = document.getElementById('hud');
     const scoreEl = document.getElementById('score');
     const comboEl = document.getElementById('combo');
@@ -251,10 +253,13 @@ export async function openCamera(deviceId?: string): Promise<HTMLVideoElement | 
   const video = document.getElementById('cam') as HTMLVideoElement | null;
   if (!video) return null;
   // 저장된 카메라가 있으면 먼저 정확히 지정해서 시도한다.
+  // 기본 해상도는 640x480 우선 (저사양 기기 추적 속도 향상: 모델 입력은 고정이라
+  // 정밀도 손실 없이 전송·디코딩 비용만 줄어든다).
   const attempts: MediaTrackConstraints[] = deviceId
     ? [{ deviceId: { exact: deviceId }, width: 1280, height: 720 }]
     : [];
   attempts.push(
+    { width: 640, height: 480, facingMode: 'user' },
     { width: 1280, height: 720, facingMode: 'user' },
     { width: 640, height: 480 }
   );

@@ -2,6 +2,7 @@ import type { PoseFrame } from '../pose/types';
 import { getByName } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawStar } from '../ui/renderer';
 
 // 2인 별자리: 양손으로 두 별을 동시에 0.8초 잡기. 협동 (혼자서도 가능).
 export class DuoStars implements Game {
@@ -21,6 +22,19 @@ export class DuoStars implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, _width: number, _height: number): void {
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(this.starA.x, this.starA.y);
+    ctx.lineTo(this.starB.x, this.starB.y);
+    ctx.stroke();
+    ctx.restore();
+    drawStar(ctx, this.starA.x, this.starA.y, 24, '#dfff00');
+    drawStar(ctx, this.starB.x, this.starB.y, 24, '#dfff00');
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];

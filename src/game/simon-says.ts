@@ -1,7 +1,8 @@
 import type { PoseFrame } from '../pose/types';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
-import { wristPattern, type DanceMove } from './rhythm-dance';
+import { wristPattern, MOVE_KR, type DanceMove } from './rhythm-dance';
+import { drawBar, drawLabel } from '../ui/renderer';
 
 export type SimonCmd = DanceMove;
 
@@ -16,6 +17,10 @@ export class SimonSays implements Game {
   private waitMs = 0;
   private ci = 0;
 
+  get timeFrac(): number {
+    return Math.min(1, this.waitMs / 2500);
+  }
+
   start(): void {
     this.running = true;
     this.board.reset();
@@ -26,6 +31,10 @@ export class SimonSays implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number): void {
+    drawLabel(ctx, `${MOVE_KR[this.command]}!`, width / 2, 70, 44);
+    drawBar(ctx, width / 2 - 110, 110, 220, 12, 1 - this.timeFrac, '#ff71ce');
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];

@@ -93,6 +93,11 @@
   transform: scaleX(-1);
 }
 
+/* 실시간 영상은 흐릿한 배경으로: 게임 요소와 스켈레톤이 앞에 선명하게 보인다. */
+.stage-frame video {
+  filter: blur(6px) brightness(0.72) saturate(1.1);
+}
+
 /* Scoreboard chips: shared shell, one metric each */
 .hud {
   display: flex;

@@ -1,6 +1,6 @@
 import './theme.css';
 import './landing.css';
-import updateLogRaw from '../../docs/UPDATELOG.md';
+import updateLogRaw from '../../docs/UPDATELOG.md?raw';
 import { openModal, parseUpdateLog, updateLogHTML } from './modal';
 
 export interface LandingGame {
@@ -209,5 +209,4 @@ export function wireUpdateLog(root: ParentNode = document): void {
       bodyHTML: updateLogHTML(parseUpdateLog(updateLogRaw))
     });
   });
-}
 }

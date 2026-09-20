@@ -3,6 +3,7 @@ import type { PoseFrame } from '../pose/types';
 import { angleDeg, getByName } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawLabel } from '../ui/renderer';
 
 export function kneeAngle(frame: PoseFrame, side: 'left' | 'right' = 'left'): number {
   const hip = getByName(frame, `${side}_hip`);
@@ -29,6 +30,10 @@ export class SquatRunner implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    drawLabel(ctx, this.isDown ? '일어서세요!' : '앉으세요!', width / 2, 70, 34);
+    drawLabel(ctx, `${this.reps}회`, width / 2, 115, 24);
   }
   tick(frame: PoseFrame, _dtMs: number): GameEvent[] {
     if (!this.running) return [];

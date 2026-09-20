@@ -2,6 +2,7 @@ import type { PoseFrame } from '../pose/types';
 import { bodyCenterX } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawLabel } from '../ui/renderer';
 
 export interface Ghoul {
   zone: 0 | 1 | 2;
@@ -27,6 +28,29 @@ export class ZombieSteps implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number): void {
+    for (const gh of this.ghouls) {
+      if (!gh.alive) continue;
+      const cx = (width * (gh.zone * 2 + 1)) / 6;
+      ctx.save();
+      ctx.fillStyle = '#3d9e57';
+      ctx.beginPath();
+      ctx.roundRect(cx - 28, gh.y - 20, 56, 64, 12);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx - 12, gh.y + 2, 6, 0, Math.PI * 2);
+      ctx.arc(cx + 12, gh.y + 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#22303c';
+      ctx.beginPath();
+      ctx.arc(cx - 12, gh.y + 3, 2.5, 0, Math.PI * 2);
+      ctx.arc(cx + 12, gh.y + 3, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    drawLabel(ctx, `${this.dodged}회 회피`, width / 2, 44, 26);
   }
   zoneOf(x: number, width: number): 0 | 1 | 2 {
     if (x < width / 3) return 0;

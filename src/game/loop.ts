@@ -10,6 +10,8 @@ export type GameEventHandler = (events: GameEvent[], board: { score: number; com
 
 export interface LoopGame extends Game {
   board: ScoreBoard;
+  // 게임 요소 그리기 (선택): 배경 지우기 → draw → 스켈레톤 순서로 렌더된다.
+  draw?(ctx: CanvasRenderingContext2D, width: number, height: number): void;
 }
 
 export interface LoopOpts {
@@ -70,6 +72,16 @@ export class GameLoop {
         return;
       }
       const events = this.opts.game.tick(frame, dt);
+      // 렌더 순서: 지우기 → 게임 요소 → 스켈레톤(맨 위).
+      const ctx = this.opts.canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, this.opts.canvas.width, this.opts.canvas.height);
+        try {
+          this.opts.game.draw?.(ctx, this.opts.canvas.width, this.opts.canvas.height);
+        } catch {
+          // 게임 그리기 실패는 루프를 멈추지 않음
+        }
+      }
       if (this.opts.showSkeleton) {
         try {
           drawSkeleton(this.opts.canvas, frame);

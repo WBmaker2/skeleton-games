@@ -2,6 +2,7 @@ import type { PoseFrame } from '../pose/types';
 import { getByName } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawLabel, drawStar } from '../ui/renderer';
 
 export interface Star {
   x: number;
@@ -27,6 +28,10 @@ export class StarCatch implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number): void {
+    if (this.star.alive) drawStar(ctx, this.star.x, this.star.y, 26, '#dfff00');
+    drawLabel(ctx, `${this.caught}개`, width - 70, 50, 30);
   }
   respawn(): void {
     this.star = { x: 80 + this.rnd() * 480, y: 80 + this.rnd() * 240, alive: true };

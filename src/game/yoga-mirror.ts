@@ -2,6 +2,7 @@ import type { PoseFrame } from '../pose/types';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
 import { anglesFromFrame, poseSimilarity, type Angles } from './body-abc';
+import { drawBar, drawLabel } from '../ui/renderer';
 
 export interface YogaPose {
   name: string;
@@ -33,6 +34,10 @@ export class YogaMirror implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number): void {
+    drawLabel(ctx, `${this.pose.name} 자세`, width / 2, 60, 36);
+    drawBar(ctx, width / 2 - 110, 100, 220, 12, this.progress, '#3d9e57');
   }
   get progress(): number {
     return Math.min(1, this.holdMs / 3000);

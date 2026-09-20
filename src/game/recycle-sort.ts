@@ -2,6 +2,7 @@ import type { PoseFrame } from '../pose/types';
 import { bodyCenterX } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawLabel } from '../ui/renderer';
 
 export type RecycleKind = 'plastic' | 'can';
 
@@ -31,6 +32,34 @@ export class RecycleSort implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    const binW = 110;
+    const binH = 80;
+    const bins: { x: number; color: string; label: string }[] = [
+      { x: width / 6 - binW / 2, color: '#3d9e57', label: '플라스틱' },
+      { x: (width * 5) / 6 - binW / 2, color: '#3b82c4', label: '캔' }
+    ];
+    for (const b of bins) {
+      ctx.save();
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.roundRect(b.x, height - binH - 12, binW, binH, 10);
+      ctx.fill();
+      ctx.restore();
+      drawLabel(ctx, b.label, b.x + binW / 2, height - binH - 34, 20);
+    }
+    if (this.item.alive) {
+      const isPlastic = this.item.kind === 'plastic';
+      ctx.save();
+      ctx.fillStyle = isPlastic ? '#3d9e57' : '#3b82c4';
+      ctx.beginPath();
+      ctx.roundRect(width / 2 - 25, this.item.y - 25, 50, 50, 10);
+      ctx.fill();
+      ctx.restore();
+      drawLabel(ctx, isPlastic ? '플' : '캔', width / 2, this.item.y, 24);
+    }
+    drawLabel(ctx, `${this.sorted}개 분류`, width / 2, 44, 26);
   }
   zoneOf(x: number, width: number): 0 | 1 | 2 {
     if (x < width / 3) return 0;

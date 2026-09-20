@@ -3,6 +3,7 @@ import type { PoseFrame } from '../pose/types';
 import { bodyCenterX, getByName } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawLabel } from '../ui/renderer';
 
 export interface Quiz { q: string; choices: [number, number, number]; answerIndex: 0 | 1 | 2 }
 
@@ -30,6 +31,23 @@ export class MathJump implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    drawLabel(ctx, this.quiz.q, width / 2, 48, 30);
+    const labels = [String(this.quiz.choices[0]), String(this.quiz.choices[1]), String(this.quiz.choices[2])];
+    for (let i = 0; i < 3; i++) {
+      const cx = (width * (i * 2 + 1)) / 6;
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(cx - 70, height - 150, 140, 90, 14);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      drawLabel(ctx, labels[i], cx, height - 105, 34);
+    }
   }
   nextQuiz(): void {
     this.qi = (this.qi + 1) % BANK.length;

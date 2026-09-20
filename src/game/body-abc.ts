@@ -2,6 +2,7 @@
 import type { PoseFrame, PoseMode } from '../pose/types';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawBar, drawLabel } from '../ui/renderer';
 
 export type Angles = Record<string, number>;
 
@@ -54,6 +55,10 @@ export class BodyABC implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number, _height: number): void {
+    drawLabel(ctx, this.target, width / 2, 70, 72);
+    drawBar(ctx, width / 2 - 110, 120, 220, 12, this.holdMs / 1000, '#dfff00');
   }
   tickAngles(current: Angles, dtMs: number): GameEvent[] {
     if (!this.running) return [];

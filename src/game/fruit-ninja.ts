@@ -23,6 +23,32 @@ export class FruitNinja implements Game {
   stop(): void {
     this.running = false;
   }
+  draw(ctx: CanvasRenderingContext2D, _width: number, _height: number): void {
+    for (const f of this.fruits) {
+      if (!f.alive) continue;
+      ctx.save();
+      if (f.kind === 'fruit') {
+        ctx.fillStyle = '#ff5d5d';
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#3d9e57';
+        ctx.beginPath();
+        ctx.ellipse(f.x + 8, f.y - 16, 9, 5, 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#22303c';
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#dfff00';
+        ctx.beginPath();
+        ctx.arc(f.x + 6, f.y - 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
   spawn(): void {
     const kind = Math.random() < 0.2 ? 'bomb' : 'fruit';
     this.fruits.push({ x: 60 + Math.random() * 520, y: 480, vx: (Math.random() - 0.5) * 120, vy: -(260 + Math.random() * 160), kind, alive: true });

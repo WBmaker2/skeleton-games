@@ -2,8 +2,16 @@ import type { PoseFrame } from '../pose/types';
 import { getByName } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawBar, drawLabel } from '../ui/renderer';
 
 export type DanceMove = 'left' | 'right' | 'both' | 'down';
+
+export const MOVE_KR: Record<DanceMove, string> = {
+  left: '왼손',
+  right: '오른손',
+  both: '양손',
+  down: '내리기'
+};
 
 // 손목 높이 패턴: 사이먼 게임과 공유한다.
 export function wristPattern(frame: PoseFrame): DanceMove {
@@ -31,6 +39,10 @@ export class RhythmDance implements Game {
   private running = false;
   private waitMs = 0;
 
+  get beatFrac(): number {
+    return Math.min(1, this.waitMs / 1800);
+  }
+
   start(): void {
     this.running = true;
     this.board.reset();
@@ -40,6 +52,10 @@ export class RhythmDance implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number): void {
+    drawLabel(ctx, MOVE_KR[this.move], width / 2, 70, 44);
+    drawBar(ctx, width / 2 - 110, 110, 220, 12, 1 - this.beatFrac, '#00ffff');
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];

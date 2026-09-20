@@ -8,12 +8,12 @@ afterEach(() => {
 });
 
 describe('openCamera fallback chain', () => {
-  it('falls back to 640x480 when 720p fails', async () => {
-    const stream480 = new MediaStream();
+  it('tries 480p first for tracking speed, then 720p', async () => {
+    const stream720 = new MediaStream();
     const getUserMedia = vi
       .fn()
       .mockRejectedValueOnce(new Error('overconstrained'))
-      .mockResolvedValueOnce(stream480);
+      .mockResolvedValueOnce(stream720);
     vi.stubGlobal('navigator', { mediaDevices: { getUserMedia } });
     const video = document.createElement('video');
     video.id = 'cam';
@@ -23,14 +23,14 @@ describe('openCamera fallback chain', () => {
     expect(out).toBe(video);
     expect(getUserMedia).toHaveBeenCalledTimes(2);
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
-      video: { width: 1280, height: 720, facingMode: 'user' },
+      video: { width: 640, height: 480, facingMode: 'user' },
       audio: false
     });
     expect(getUserMedia).toHaveBeenNthCalledWith(2, {
-      video: { width: 640, height: 480 },
+      video: { width: 1280, height: 720, facingMode: 'user' },
       audio: false
     });
-    expect(video.srcObject).toBe(stream480);
+    expect(video.srcObject).toBe(stream720);
   });
   it('returns null when all fail', async () => {
     const getUserMedia = vi.fn().mockRejectedValue(new Error('denied'));

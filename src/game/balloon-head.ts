@@ -2,6 +2,7 @@ import type { PoseFrame } from '../pose/types';
 import { getByName } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
+import { drawLabel } from '../ui/renderer';
 
 export interface Balloon {
   x: number;
@@ -26,6 +27,22 @@ export class BalloonHead implements Game {
   }
   stop(): void {
     this.running = false;
+  }
+  draw(ctx: CanvasRenderingContext2D, width: number): void {
+    const b = this.balloon;
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y + 34);
+    ctx.lineTo(b.x, b.y + 70);
+    ctx.stroke();
+    ctx.fillStyle = '#ff71ce';
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, 30, 36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    drawLabel(ctx, `${this.hits}번`, width - 70, 50, 30);
   }
   private headOf(frame: PoseFrame): { x: number; y: number } | null {
     const nose = getByName(frame, 'nose');
