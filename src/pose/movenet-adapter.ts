@@ -49,7 +49,9 @@ export class MoveNetAdapter implements PoseEngine {
 
   async estimate(video: HTMLVideoElement): Promise<PoseFrame> {
     if (!this.detector) throw new Error('MoveNet not loaded. Call load() first.');
-    const poses = await this.detector.estimatePoses(video, { flipHorizontal: true });
+    // flipHorizontal: false — CSS가 비디오·캔버스를 이미 거울 반전시키므로,
+    // 모델 좌표까지 뒤집으면 이중 반전이 되어 몸과 반대로 움직인다.
+    const poses = await this.detector.estimatePoses(video, { flipHorizontal: false });
     const kp = poses[0]?.keypoints ?? [];
     return {
       width: video.videoWidth || 640,

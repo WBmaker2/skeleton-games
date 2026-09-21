@@ -78,8 +78,8 @@ export class MediaPipeAdapter implements PoseEngine {
       timestamp: performance.now(),
       keypoints: pts.map((p, i) => ({
         name: landmarkName(i),
-        // MoveNet의 flipHorizontal과 동일한 셀카 미러 (엔진 간 좌표계 일치).
-        x: w - p.x * w,
+        // 원본 좌표 그대로 (CSS 쌍반전이 셀카 미러 담당, MoveNet과 동일).
+        x: p.x * w,
         y: p.y * h,
         score: 1
       }))

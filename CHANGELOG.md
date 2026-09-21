@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.2 (2026-09-21) — 반전 수정
+
+- 이중 반전 제거: 모델 좌표는 원본, CSS 쌍반전만 유지 (몸과 같은 방향)
+- 미러 회귀 테스트 (flipHorizontal: false, 좌표 패스스루)
+
 ## 0.10.0 (2026-09-21) — 엔진 교체·카운트다운
 
 - 기본 엔진 MediaPipe PoseLandmarker로 교체 (GPU 네이티브, 실패 시 MoveNet 폴백)
