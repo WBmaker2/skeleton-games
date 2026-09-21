@@ -14,6 +14,35 @@ describe('storage', () => {
   it('builds share link with hash', () => {
     expect(shareLink('fruit')).toContain('#/fruit');
   });
+  it('merges duplicate names keeping the higher score', () => {
+    saveScore('fruit', { name: '나', score: 50 });
+    saveScore('fruit', { name: '나', score: 30 });
+    const top = topScores('fruit');
+    expect(top).toHaveLength(1);
+    expect(top[0]).toMatchObject({ name: '나', score: 50 });
+  });
+  it('replaces with a higher score for the same name', () => {
+    saveScore('fruit', { name: '나', score: 30 });
+    const saved = saveScore('fruit', { name: '나', score: 70 });
+    expect(saved.score).toBe(70);
+    expect(topScores('fruit')).toHaveLength(1);
+  });
+  it('merges legacy duplicates on read', () => {
+    localStorage.setItem(
+      'skelplay:fruit',
+      JSON.stringify([
+        { name: '나', score: 20 },
+        { name: '나', score: 60 },
+        { name: '너', score: 10 }
+      ])
+    );
+    expect(topScores('fruit').map((s) => s.score)).toEqual([60, 10]);
+  });
+  it('trims names when merging', () => {
+    saveScore('fruit', { name: '나', score: 10 });
+    saveScore('fruit', { name: ' 나 ', score: 20 });
+    expect(topScores('fruit')).toHaveLength(1);
+  });
   it('returns [] on corrupted JSON', () => {
     localStorage.setItem('skelplay:fruit', 'not-json{{{');
     expect(topScores('fruit')).toEqual([]);

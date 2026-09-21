@@ -143,4 +143,21 @@ describe('SquatRunner', () => {
     expect(g.isDown).toBe(true);
     expect(g.cueText()).toBe('일어서세요!');
   });
+
+  it('reacts to a squat within a single frame', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrame(false), 16);
+    expect(g.squatDepth).toBeGreaterThan(0.5);
+    // 횟수 인정은 기존 홀드 유지 (시각 반응만 즉시).
+    expect(g.isDown).toBe(false);
+  });
+
+  it('returns to zero depth when standing', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrame(false), 16);
+    g.tick(squatFrame(true), 16);
+    expect(g.squatDepth).toBe(0);
+  });
 });

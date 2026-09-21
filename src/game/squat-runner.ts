@@ -25,6 +25,9 @@ export class SquatRunner implements Game {
   coins: RunnerCoin[] = [];
   distanceM = 0;
   beatCount = 0;
+  // 스쿼트 깊이 0(서있음)~1(완전 앉음): 매 프레임 즉시 갱신 (시각·판정용).
+  // 횟수 인정(isDown)은 기존 300ms 홀드 유지.
+  squatDepth = 0;
   private running = false;
   private holdMs = 0;
   private elapsedMs = 0;
@@ -63,6 +66,7 @@ export class SquatRunner implements Game {
     this.beatClock = 0;
     this.beatAgeMs = 0;
     this.pendingHighMs = [];
+    this.squatDepth = 0;
   }
   stop(): void {
     this.running = false;
@@ -94,9 +98,10 @@ export class SquatRunner implements Game {
         ctx.fillRect(0, y, width * 0.3, 3);
       }
     }
-    // 플레이어: 서면 김, 앉으면 납작.
-    const pw = this.isDown ? 56 : 44;
-    const ph = this.isDown ? 50 : 90;
+    // 플레이어: 깊이에 따라 즉시 찌그러짐 (홀드 대기 없음).
+    const d = this.squatDepth;
+    const pw = 44 + 12 * d;
+    const ph = 90 - 40 * d;
     ctx.fillStyle = '#22d3ee';
     ctx.fillRect(playerX - pw / 2, groundY - ph, pw, ph);
     ctx.fillStyle = '#ffffff';
@@ -170,7 +175,7 @@ export class SquatRunner implements Game {
   }
   // 다음 동작 예고: 박자 순간=앉기, 박자 사이=일어나기.
   cueText(): string {
-    if (this.isDown) return '일어서세요!';
+    if (this.squatDepth >= 0.5) return '일어서세요!';
     const toBeat = this.beatIntervalMs - this.beatClock;
     if (toBeat <= 350) return '지금 앉아!';
     return `앉기까지 ${Math.ceil(toBeat / 1000)}초`;
@@ -214,6 +219,9 @@ export class SquatRunner implements Game {
     else if (rightOk) angle = kneeAngle(frame, 'right');
     else angle = 180;
     const events: GameEvent[] = [];
+    // 시각·판정용 깊이는 홀드 없이 즉시 반영 (150°=섬, 95°=완전 앉음).
+    this.squatDepth = Math.min(1, Math.max(0, (150 - angle) / 55));
+    const ducking = this.squatDepth >= 0.5;
     if (angle < 100) {
       this.holdMs += _dtMs;
       if (!this.isDown && this.holdMs > 300) {
@@ -255,7 +263,7 @@ export class SquatRunner implements Game {
       ob.x -= speed * dt;
       if (ob.x <= playerX) {
         ob.alive = false;
-        if (this.isDown) {
+        if (ducking) {
           this.board.comboHit();
           this.board.add(10);
           events.push({ type: 'dodge', points: 10, label: '장애물 통과!' });
@@ -270,7 +278,7 @@ export class SquatRunner implements Game {
       c.x -= speed * dt;
       const wantsDown = c.lane === 'low';
       if (Math.abs(c.x - playerX) < 34) {
-        if (this.isDown === wantsDown) {
+        if (ducking === wantsDown) {
           c.alive = false;
           this.board.comboHit();
           this.board.add(5);
