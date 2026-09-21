@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GameLoop } from '../src/game/loop';
 import { FakeEngine } from '../src/pose/fake-engine';
-import { FruitNinja } from '../src/game/fruit-ninja';
+import { FruitNinja } from '../src/games/fruit';
 
 let rafCb: FrameRequestCallback | null = null;
 let cancelled = false;

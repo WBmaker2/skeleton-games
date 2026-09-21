@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 // tests/calibration-apply.test.ts
 import { describe, expect, it } from 'vitest';
-import { FruitNinja } from '../src/game/fruit-ninja';
-import { BodyABC } from '../src/game/body-abc';
+import { FruitNinja } from '../src/games/fruit';
+import { BodyABC } from '../src/games/abc';
 import { drawZones } from '../src/ui/renderer';
 import type { PoseFrame } from '../src/pose/types';
 

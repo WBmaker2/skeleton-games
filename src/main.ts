@@ -2,8 +2,8 @@ import { parseHash } from './ui/router';
 import type { GameId } from './ui/router';
 import { createGame, defaultCalibration, loadEngine } from './ui/app';
 import type { PlayableId } from './ui/app';
-import { FruitNinja } from './game/fruit-ninja';
-import { BodyABC } from './game/body-abc';
+import { FruitNinja } from './games/fruit';
+import { BodyABC } from './games/abc';
 import type { PoseEngine } from './pose/pose-engine';
 import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
@@ -12,29 +12,21 @@ import { beep } from './ui/feedback';
 import { saveScore, shareLink } from './game/storage';
 import { boardHTML, refreshBoard, resultDoneHTML, resultFormHTML } from './ui/leaderboard';
 import type { ScoreBoard } from './game/engine';
-import { renderLanding } from './ui/landing';
+import { renderLanding } from './landing/landing';
 import updateLogRaw from '../docs/UPDATELOG.md?raw';
 import { openModal, parseUpdateLog, updateLogHTML } from './ui/modal';
 import { RULES } from './ui/help';
-import { wireUpdateLog } from './ui/landing';
+import { wireUpdateLog } from './landing/landing';
 import { getPreferredCamera, listCameras, setPreferredCamera } from './ui/camera';
 import { fitStageToVideo } from './ui/stage';
 import './ui/game.css';
 
-const GAME_NAMES: Record<PlayableId, string> = {
-  fruit: '과일 닌자 몸버전',
-  squat: '스쿼트 러너',
-  math: '점프 수학 퀴즈',
-  abc: '몸으로 ABC',
-  star: '별잡기 스트레칭',
-  balloon: '풍선 헤딩',
-  zombie: '좀비 스텝 피하기',
-  dance: '리듬 댄스 카피',
-  simon: '사이먼 AI 선생님',
-  yoga: '요가 거울',
-  duo: '2인 별자리',
-  recycle: '분리수거 스트레칭'
-};
+import { GAMEMETAS } from './games';
+
+// 게임 화면 제목은 각 게임 폴더의 meta에서 가져온다.
+const GAME_NAMES: Record<PlayableId, string> = Object.fromEntries(
+  GAMEMETAS.map((m) => [m.id, m.name])
+) as Record<PlayableId, string>;
 
 function gameIdOr(id: GameId): PlayableId {
   return id === 'home' ? 'fruit' : id;
