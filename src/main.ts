@@ -1,11 +1,9 @@
 import { parseHash } from './ui/router';
 import type { GameId } from './ui/router';
-import { createGame, defaultCalibration } from './ui/app';
+import { createGame, defaultCalibration, loadEngine } from './ui/app';
 import type { PlayableId } from './ui/app';
 import { FruitNinja } from './game/fruit-ninja';
 import { BodyABC } from './game/body-abc';
-import { MoveNetAdapter } from './pose/movenet-adapter';
-import { MediaPipeAdapter } from './pose/mediapipe-adapter';
 import type { PoseEngine } from './pose/pose-engine';
 import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
@@ -42,20 +40,52 @@ function gameIdOr(id: GameId): PlayableId {
   return id === 'home' ? 'fruit' : id;
 }
 
-async function collectCalibration(engine: PoseEngine, video: HTMLVideoElement | null, overlay: HTMLElement): Promise<Calibration> {
+export interface CountdownOpts {
+  beats?: number[];
+  stepMs?: number;
+  goMs?: number;
+  frameMs?: number;
+}
+
+// 카운트다운 + 백그라운드 보정: 5→1 표시 동안 프레임을 모아 보정한다.
+// 스킵하면 즉시 게임으로. 게임 시작을 블로킹하지 않는 고정 시간 흐름.
+export async function countdownCalibration(
+  engine: PoseEngine,
+  video: HTMLVideoElement | null,
+  overlay: HTMLElement,
+  opts: CountdownOpts = {}
+): Promise<Calibration> {
+  const beats = opts.beats ?? [5, 4, 3, 2, 1];
+  const stepMs = opts.stepMs ?? 1000;
+  const goMs = opts.goMs ?? 600;
+  const frameMs = opts.frameMs ?? 80;
   const msg = overlay.querySelector('#calibmsg') ?? overlay;
-  msg.textContent = 'T자세로 3초간 서주세요 (스킵 가능)';
+  const skipped = (): boolean =>
+    (overlay as HTMLElement & { skipped?: boolean }).skipped === true;
   const frames: PoseFrame[] = [];
   const dummy = video ?? document.createElement('video');
-  const started = performance.now();
-  while (performance.now() - started < 3000 && frames.length < 60) {
-    if ((overlay as HTMLElement & { skipped?: boolean }).skipped) break;
+  const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+  const endAt = Date.now() + beats.length * stepMs + goMs;
+  let beat = 0;
+  msg.innerHTML = '';
+  const num = document.createElement('div');
+  num.className = 'count-num';
+  const sub = document.createElement('p');
+  sub.textContent = 'T자세로 서서 준비하세요';
+  msg.append(num, sub);
+  while (Date.now() < endAt && !skipped()) {
+    const remain = endAt - Date.now();
+    const label = remain <= goMs ? '시작!' : String(beats[Math.min(beat, beats.length - 1)]);
+    if (num.textContent !== label) {
+      num.textContent = label;
+      beat += 1;
+    }
     try {
       frames.push(await engine.estimate(dummy));
     } catch {
       break;
     }
-    await new Promise((r) => setTimeout(r, 50));
+    await sleep(frameMs);
   }
   if (frames.length < 4) return defaultCalibration();
   return calibrate(frames);
@@ -200,15 +230,13 @@ export function boot(): void {
       showCamError('카메라를 찾지 못했어요. 카메라를 연결하고 아래 버튼을 눌러주세요.');
       return;
     }
-    let engine: PoseEngine;
-    try {
-      engine = id === 'abc' ? new MediaPipeAdapter() : new MoveNetAdapter();
-      await engine.load();
-    } catch {
+    const loaded = await loadEngine(id);
+    if (!loaded) {
       showCamError('인식 모델을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요.');
       return;
     }
-    const cal = overlay ? await collectCalibration(engine, video, overlay) : defaultCalibration();
+    engine = loaded;
+    const cal = overlay ? await countdownCalibration(engine, video, overlay) : defaultCalibration();
     overlay?.remove();
     if (game instanceof FruitNinja) game.radiusScale = cal.scale;
     if (game instanceof BodyABC) game.mode = cal.mode;

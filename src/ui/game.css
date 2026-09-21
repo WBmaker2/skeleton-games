@@ -148,6 +148,16 @@
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
 }
 
+/* 카운트다운 숫자: 가운데 크게 오버레이 */
+.count-num {
+  font-size: clamp(4rem, 18vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  color: var(--lp-leaf-deep);
+  font-variant-numeric: tabular-nums;
+}
+
 .overlay-error {
   border: 2px solid var(--lp-leaf-deep);
 }
