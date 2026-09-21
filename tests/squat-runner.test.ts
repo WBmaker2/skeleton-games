@@ -35,4 +35,55 @@ describe('SquatRunner', () => {
     for (let i = 0; i < 20; i++) events.push(...g.tick(squatFrame(false), 16));
     expect(events.some((e) => e.type === 'duck')).toBe(true);
   });
+
+  it('catches player standing into a barrier', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.spawnObstacle(640 * 0.22);
+    const events = g.tick(squatFrame(true), 16);
+    expect(events.some((e) => e.type === 'caught')).toBe(true);
+  });
+
+  it('dodges a barrier while squatting', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 25; i++) g.tick(squatFrame(false), 16);
+    expect(g.isDown).toBe(true);
+    g.spawnObstacle(640 * 0.22);
+    const events = g.tick(squatFrame(false), 16);
+    expect(events.some((e) => e.type === 'dodge')).toBe(true);
+  });
+
+  it('collects a high coin while standing', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.spawnCoin('high', 640 * 0.22);
+    const events = g.tick(squatFrame(true), 16);
+    expect(events.some((e) => e.type === 'catch')).toBe(true);
+  });
+
+  it('collects a low coin while squatting', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 25; i++) g.tick(squatFrame(false), 16);
+    g.spawnCoin('low', 640 * 0.22);
+    const events = g.tick(squatFrame(false), 16);
+    expect(events.some((e) => e.type === 'catch')).toBe(true);
+  });
+
+  it('misses a high coin while squatting', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 25; i++) g.tick(squatFrame(false), 16);
+    g.spawnCoin('high', 640 * 0.22);
+    const events = g.tick(squatFrame(false), 16);
+    expect(events.some((e) => e.type === 'catch')).toBe(false);
+  });
+
+  it('accumulates running distance over time', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 30; i++) g.tick(squatFrame(true), 16);
+    expect(g.distanceM).toBeGreaterThan(0);
+  });
 });
