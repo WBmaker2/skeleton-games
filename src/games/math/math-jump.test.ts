@@ -24,12 +24,27 @@ describe('MathJump', () => {
     expect(g.zoneOf(300, 600)).toBe(1);
     expect(g.zoneOf(500, 600)).toBe(2);
   });
-  it('confirms answer after dwell', () => {
+  it('waits think time before confirming answer', () => {
     const g = new MathJump();
     g.start();
     g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
-    let events = [];
-    for (let i = 0; i < 40; i++) events.push(...g.tick(centerFrame(550), 16));
-    expect(events.some((e) => e.type === 'correct' || e.type === 'wrong')).toBe(true);
+    // 생각 시간(3.5초) 안에는 같은 자리에 있어도 확정되면 안 됨
+    const early: string[] = [];
+    for (let i = 0; i < 40; i++) early.push(...g.tick(centerFrame(550), 16).map((e) => e.type));
+    expect(early.some((t) => t === 'correct' || t === 'wrong')).toBe(false);
+    expect(g.isThinking).toBe(true);
+    // 생각 시간 + dwell이 지나면 확정됨
+    const late: string[] = [];
+    for (let i = 0; i < 300; i++) late.push(...g.tick(centerFrame(550), 16).map((e) => e.type));
+    expect(late.some((t) => t === 'correct' || t === 'wrong')).toBe(true);
+  });
+  it('gives think time again after next quiz', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    for (let i = 0; i < 300; i++) g.tick(centerFrame(550), 16);
+    // 문제가 바뀌면 다시 생각 중 상태여야 함
+    expect(g.isThinking).toBe(true);
+    expect(g.thinkRemainingMs).toBeGreaterThan(0);
   });
 });
