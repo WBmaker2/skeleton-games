@@ -4,6 +4,7 @@ import { createGame, defaultCalibration, loadEngine } from './ui/app';
 import type { PlayableId } from './ui/app';
 import { FruitNinja } from './games/fruit';
 import { BodyABC } from './games/abc';
+import { MathJump } from './games/math';
 import type { PoseEngine } from './pose/pose-engine';
 import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
@@ -13,10 +14,8 @@ import { saveScore, shareLink } from './game/storage';
 import { boardHTML, refreshBoard, resultDoneHTML, resultFormHTML } from './ui/leaderboard';
 import type { ScoreBoard } from './game/engine';
 import { renderLanding } from './landing/landing';
-import updateLogRaw from '../docs/UPDATELOG.md?raw';
-import { openModal, parseUpdateLog, updateLogHTML } from './ui/modal';
+import { openModal } from './ui/modal';
 import { RULES } from './ui/help';
-import { wireUpdateLog } from './landing/landing';
 import { getPreferredCamera, listCameras, setPreferredCamera } from './ui/camera';
 import { fitStageToVideo } from './ui/stage';
 import './ui/game.css';
@@ -121,7 +120,7 @@ export function boot(): void {
       `<div class="game-screen"><div class="game-inner">` +
       `<header class="game-top"><p class="game-kicker">Skeleton Play · 60초 챌린지</p>` +
       `<h1 class="game-title">${GAME_NAMES[id]}</h1>` +
-      `<nav class="game-nav" aria-label="게임 이동"><a href="#/">← 모든 게임</a></nav></header>` +
+      `<nav class="game-nav" aria-label="게임 이동"><a href="#/">← 모든 게임</a><button type="button" id="howto" class="btn-small">게임 방법</button></nav></header>` +
       `<main aria-label="게임 화면">` +
       `<p data-testid="route" hidden>${id}</p>` +
       `<div class="stage-wrap"><div class="stage-frame"><video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas></div>` +
@@ -136,10 +135,7 @@ export function boot(): void {
       `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
       `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
       `<p class="shareline">공유: <span id="share"></span></p><div id="ranks">${''}</div>` +
-      `<p class="helprow"><button type="button" id="howto" class="btn-small">게임 방법</button> ` +
-      `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>` +
       `</main></div></div>`;
-    wireUpdateLog(app);
     wireHowTo(app, id);
     refreshBoard(app, id);
     void start(id);
@@ -249,8 +245,8 @@ export function boot(): void {
       game,
       calibration: cal,
       showSkeleton: true,
-      // 게임 캐릭터 마스크 (파일이 없으면 drawFaceMask가 스킵).
-      face: loadFaceMask(id),
+      // 게임 캐릭터 마스크 (파일이 없거나 hideFace 게임이면 스킵).
+      face: game instanceof MathJump ? null : loadFaceMask(id),
       timeLimitSec: 60,
       onTimeUp: (board) => {
         showRanks();

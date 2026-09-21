@@ -70,6 +70,19 @@
   outline-offset: 3px;
 }
 
+/* 게임 방법 버튼: ← 모든 게임과 같은 줄, 오른쪽 끝 배치 */
+.game-nav #howto {
+  margin-left: auto;
+}
+
+.game-nav .btn-small {
+  min-height: var(--lp-target-min);
+  color: var(--lp-ink);
+  background: var(--lp-paper);
+  border: none;
+  font-size: var(--lp-text-body);
+}
+
 /* Stage: video mirror with canvas overlay, shared 4/3 frame */
 .stage-frame {
   position: relative;
@@ -288,18 +301,6 @@
 .ranks {
   font-size: var(--lp-text-body);
   color: var(--lp-leaf-tint);
-}
-
-.helprow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--lp-space-2);
-  margin: var(--lp-space-4) 0 0;
-}
-
-.helprow .btn-small {
-  color: var(--lp-leaf-tint);
-  border-color: #3a4f63;
 }
 
 .ranks {
