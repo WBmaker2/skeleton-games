@@ -68,3 +68,20 @@ describe('FruitNinja spawn spread', () => {
     expect(xs[2]).toBeCloseTo((640 * 5) / 6, 0);
   });
 });
+
+describe('FruitNinja spawn spread', () => {
+  it('distributes hundreds of spawns evenly across thirds', () => {
+    const g = new FruitNinja();
+    g.start();
+    const zones = [0, 0, 0];
+    for (let i = 0; i < 300; i++) {
+      g.spawn();
+      const x = g.fruits[g.fruits.length - 1].x;
+      zones[x < 213 ? 0 : x < 427 ? 1 : 2] += 1;
+    }
+    for (const z of zones) {
+      expect(z).toBeGreaterThan(60);
+      expect(z).toBeLessThan(140);
+    }
+  });
+});
