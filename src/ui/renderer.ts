@@ -138,7 +138,9 @@ export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void 
     ctx.stroke();
   }
   // 손 마커: 베기·잡기의 판정점(손목)을 동그라미로 표시.
-  // 오른손은 이중 링으로 구분 (색이 아닌 모양 단서, WCAG 1.4.1).
+  // 양손 동일: 과일 베기 등 양손을 동등하게 쓰는 게임에서
+  // 한쪽만 강조하면 다른 쪽 손이 안 보이는 착시가 생긴다.
+  // 노랑 이중 링으로 멀리서도 식별 (WCAG 1.4.1: 모양 단서).
   for (const name of ['left_wrist', 'right_wrist']) {
     const w = byName.get(name);
     if (!w || (w.score ?? 0) < 0.3) continue;
@@ -150,13 +152,11 @@ export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void 
     ctx.arc(w.x, w.y, 11, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    if (name === 'right_wrist') {
-      ctx.strokeStyle = '#dfff00';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(w.x, w.y, 16, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    ctx.strokeStyle = '#dfff00';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, 16, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 }

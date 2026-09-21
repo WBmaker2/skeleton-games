@@ -46,6 +46,7 @@ export class GameLoop {  private raf = 0;
   private lastMs = 0;
   private monitor = new FpsMonitor();
   private particles: Particle[] = [];
+  private startedAt = 0;
   private dummyVideo: HTMLVideoElement | null = null;
   constructor(private opts: LoopOpts) {}
 
@@ -53,11 +54,28 @@ export class GameLoop {  private raf = 0;
     return this.monitor.fps;
   }
 
+  get particleCount(): number {
+    return this.particles.length;
+  }
+
+  get elapsedSec(): number {
+    if (!this.running || this.startedAt === 0) return 0;
+    return Math.max(0, (performance.now() - this.startedAt) / 1000);
+  }
+
+  // 콤보 마일스톤 축하: 화면 중앙에 큰 파티클 폭발.
+  celebrate(n = 40): void {
+    const w = this.opts.canvas.width;
+    const h = this.opts.canvas.height;
+    spawnBurst(this.particles, w / 2, h / 3, n);
+  }
+
   start(): void {
     if (this.running) return;
     this.running = true;
     this.monitor.reset();
     this.lastMs = 0;
+    this.startedAt = performance.now();
     const tick = async (nowMs: number): Promise<void> => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(tick);

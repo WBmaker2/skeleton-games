@@ -95,3 +95,31 @@ describe('GameLoop', () => {
     expect(spy.mock.calls[spy.mock.calls.length - 1]?.[1]).toBe(100);
   });
 });
+
+describe('GameLoop celebration and clock', () => {
+  it('celebrate() fills particles and elapsedSec runs', () => {
+    installRaf();
+    const engine = new FakeEngine();
+    engine.push({ width: 640, height: 480, timestamp: 0, keypoints: [] });
+    const game = new FruitNinja();
+    game.start();
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const loop = new GameLoop({
+      video: null,
+      canvas,
+      engine,
+      game,
+      calibration: { scale: 1, centerX: 320, mode: 'seated', shoulderWidth: 100 },
+      showSkeleton: false
+    });
+    expect(loop.particleCount).toBe(0);
+    expect(loop.elapsedSec).toBe(0);
+    loop.start();
+    expect(loop.elapsedSec).toBeGreaterThanOrEqual(0);
+    loop.celebrate(10);
+    expect(loop.particleCount).toBe(10);
+    loop.stop();
+  });
+});

@@ -69,9 +69,11 @@ export function boot(): void {
   let engine: PoseEngine | null = null;
   let fpsTimer = 0;
   let current: { id: PlayableId; board: ScoreBoard } | null = null;
+  let lastCombo = 0;
   const render = () => {
     if (current && current.board.score > 0) saveScore(current.id, { name: '나', score: current.board.score });
     current = null;
+    lastCombo = 0;
     const oldVideo = document.getElementById('cam') as HTMLVideoElement | null;
     const oldStream = oldVideo?.srcObject as MediaStream | null;
     if (oldStream && typeof oldStream.getTracks === 'function') oldStream.getTracks().forEach((t) => t.stop());
@@ -103,6 +105,7 @@ export function boot(): void {
       `<section class="hud" aria-label="점수판">` +
       `<div class="hud-chip"><span>점수</span><strong id="score">0</strong></div>` +
       `<div class="hud-chip"><span>콤보</span><strong id="combo">0</strong></div>` +
+      `<div class="hud-chip"><span>시간</span><strong id="time">0:00</strong></div>` +
       `<div class="hud-chip"><span>상태</span><strong id="fps">준비 중</strong></div></section>` +
       `<p id="hud" class="hud-msg">준비 중…</p>` +
       `<div id="calib" class="overlay"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
@@ -240,6 +243,12 @@ export function boot(): void {
           if (scoreEl) scoreEl.textContent = String(board.score);
           if (comboEl) comboEl.textContent = String(board.combo);
         }
+        // 콤보 5 단위 마일스톤 축하 (같은 콤보 중복 방지).
+        if (board.combo >= 5 && board.combo % 5 === 0 && board.combo !== lastCombo) {
+          lastCombo = board.combo;
+          loop?.celebrate();
+          if (hud) hud.textContent = `콤보 ${board.combo}연속! 대단해요!`;
+        }
       }
     });
     loop.start();
@@ -248,6 +257,9 @@ export function boot(): void {
         clearInterval(fpsTimer);
         return;
       }
+      const sec = Math.floor(loop.elapsedSec);
+      const timeEl = document.getElementById('time');
+      if (timeEl) timeEl.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
       if (fpsEl) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드`;
     }, 500));
   };

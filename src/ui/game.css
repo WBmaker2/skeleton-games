@@ -127,13 +127,14 @@
 }
 
 .hud-chip strong {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-variant-numeric: tabular-nums;
 }
 
 .hud-msg {
   min-height: 1.75em;
-  font-size: var(--lp-text-body);
+  font-size: 1.25rem;
+  font-weight: 600;
   line-height: 1.6;
 }
 
@@ -244,8 +245,11 @@
 }
 
 @media (max-width: 520px) {
+  .hud {
+    gap: var(--lp-space-2);
+  }
   .hud-chip strong {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 }
 

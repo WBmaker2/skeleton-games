@@ -53,21 +53,22 @@ export class FruitNinja implements Game {
   }
   spawn(): void {
     const kind = Math.random() < 0.2 ? 'bomb' : 'fruit';
-    // 빠른 상승 + 강한 중력: 화면에 오래 머물지 않고 리듬감 있게 오르내림.
-    this.fruits.push({ x: 60 + Math.random() * 520, y: 480, vx: (Math.random() - 0.5) * 160, vy: -(320 + Math.random() * 220), kind, alive: true });
+    // 위에서 떨어지기: 화면 위(y=-20) 스폰 후 낙하. 빠른 상승 대신
+    // 빠른 낙하 + 강한 중력으로 박진감 있게 빽빽히 떨어진다.
+    this.fruits.push({ x: 60 + Math.random() * 520, y: -20, vx: (Math.random() - 0.5) * 120, vy: 120 + Math.random() * 140, kind, alive: true });
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
     const dt = dtMs / 1000;
     this.spawnMs += dtMs;
-    if (this.spawnMs > 600) {
+    if (this.spawnMs > 400) {
       this.spawnMs = 0;
       this.spawn();
     }
     for (const f of this.fruits) {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
-      f.vy += 620 * dt;
+      f.vy += 700 * dt;
     }
     const wrists = [getByName(frame, 'left_wrist'), getByName(frame, 'right_wrist')].filter((w) => w && (w.score ?? 0) > 0.3);
     const events: GameEvent[] = [];
