@@ -123,3 +123,39 @@ describe('GameLoop celebration and clock', () => {
     loop.stop();
   });
 });
+
+describe('GameLoop time limit', () => {
+  it('stops and notifies once at 60s', async () => {
+    installRaf();
+    const engine = new FakeEngine();
+    engine.push({ width: 640, height: 480, timestamp: 0, keypoints: [] });
+    const game = new FruitNinja();
+    game.start();
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const seen: number[] = [];
+    const loop = new GameLoop({
+      video: null,
+      canvas,
+      engine,
+      game,
+      calibration: { scale: 1, centerX: 320, mode: 'seated', shoulderWidth: 100 },
+      showSkeleton: false,
+      timeLimitSec: 60,
+      onTimeUp: (board) => seen.push(board.score)
+    });
+    loop.start();
+    pump(1, 16);
+    await new Promise((r) => setTimeout(r, 0));
+    // rAF timestamp jump past the limit (startedAt is wall-clock, pump times are small —
+    // so drive with real-aligned times instead: emulate by pumping far future).
+    pump(1, 120000);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(seen).toHaveLength(1);
+    pump(1, 120000);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(seen).toHaveLength(1);
+    loop.stop();
+  });
+});

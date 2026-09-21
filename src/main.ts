@@ -96,7 +96,7 @@ export function boot(): void {
     // WCAG: game screen landmarks + heading order (h1 game name).
     app.innerHTML =
       `<div class="game-screen"><div class="game-inner">` +
-      `<header class="game-top"><p class="game-kicker">Skeleton Play</p>` +
+      `<header class="game-top"><p class="game-kicker">Skeleton Play · 60초 챌린지</p>` +
       `<h1 class="game-title">${GAME_NAMES[id]}</h1>` +
       `<nav class="game-nav" aria-label="게임 이동"><a href="#/">← 모든 게임</a></nav></header>` +
       `<main aria-label="게임 화면">` +
@@ -105,13 +105,14 @@ export function boot(): void {
       `<section class="hud" aria-label="점수판">` +
       `<div class="hud-chip"><span>점수</span><strong id="score">0</strong></div>` +
       `<div class="hud-chip"><span>콤보</span><strong id="combo">0</strong></div>` +
-      `<div class="hud-chip"><span>시간</span><strong id="time">0:00</strong></div>` +
+      `<div class="hud-chip"><span>남은 시간</span><strong id="time">1:00</strong></div>` +
       `<div class="hud-chip"><span>상태</span><strong id="fps">준비 중</strong></div></section>` +
       `<p id="hud" class="hud-msg">준비 중…</p>` +
       `<div id="calib" class="overlay"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
       `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
       `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
       `<p class="shareline">공유: <span id="share"></span></p><ol id="ranks" class="ranks"></ol>` +
+      `<div id="result" class="overlay" hidden></div>` +
       `<p class="helprow"><button type="button" id="howto" class="btn-small">게임 방법</button> ` +
       `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>` +
       `</main></div></div>`;
@@ -229,6 +230,25 @@ export function boot(): void {
       showSkeleton: true,
       // 게임 캐릭터 마스크 (파일이 없으면 drawFaceMask가 스킵).
       face: loadFaceMask(id),
+      timeLimitSec: 60,
+      onTimeUp: (board) => {
+        if (board.score > 0) saveScore(id, { name: '나', score: board.score });
+        showRanks();
+        const result = document.getElementById('result');
+        if (result) {
+          result.innerHTML =
+            `<p id="calibmsg">60초 챌린지 종료! ${board.score}점</p>` +
+            `<button type="button" id="again" class="btn">다시 도전</button>`;
+          result.hidden = false;
+          result.querySelector('#again')?.addEventListener('click', () => {
+            result.hidden = true;
+            void start(id);
+          });
+          (result.querySelector('#again') as HTMLElement | null)?.focus?.();
+        }
+        if (hud) hud.textContent = `60초 챌린지 종료! ${board.score}점`;
+        beep('win');
+      },
       onEvent: (events, board) => {
         for (const e of events) {
           beep(
@@ -257,9 +277,9 @@ export function boot(): void {
         clearInterval(fpsTimer);
         return;
       }
-      const sec = Math.floor(loop.elapsedSec);
+      const remain = Math.max(0, 60 - Math.floor(loop.elapsedSec));
       const timeEl = document.getElementById('time');
-      if (timeEl) timeEl.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+      if (timeEl) timeEl.textContent = `${Math.floor(remain / 60)}:${String(remain % 60).padStart(2, '0')}`;
       if (fpsEl) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드`;
     }, 500));
   };

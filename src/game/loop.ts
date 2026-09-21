@@ -25,6 +25,9 @@ export interface LoopOpts {
   // 얼굴 마스크 이미지 (없으면 스킵). 게임별 art/mask-<id>.png.
   face?: HTMLImageElement | null;
   onEvent?: GameEventHandler;
+  // 제한시간(초). 다 되면 루프를 멈추고 onTimeUp을 1회 호출한다.
+  timeLimitSec?: number;
+  onTimeUp?: (board: { score: number; combo: number }) => void;
 }
 
 // 축하 이펙트를 터뜨리는 성공 이벤트들 (12종 게임 공통).
@@ -47,6 +50,7 @@ export class GameLoop {  private raf = 0;
   private monitor = new FpsMonitor();
   private particles: Particle[] = [];
   private startedAt = 0;
+  private timeUpFired = false;
   private dummyVideo: HTMLVideoElement | null = null;
   constructor(private opts: LoopOpts) {}
 
@@ -76,9 +80,21 @@ export class GameLoop {  private raf = 0;
     this.monitor.reset();
     this.lastMs = 0;
     this.startedAt = performance.now();
+    this.timeUpFired = false;
     const tick = async (nowMs: number): Promise<void> => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(tick);
+      // 60초 챌린지: 제한시간이 되면 루프를 멈추고 1회만 통지한다.
+      const limitMs = (this.opts.timeLimitSec ?? 60) * 1000;
+      if (!this.timeUpFired && nowMs - this.startedAt >= limitMs) {
+        this.timeUpFired = true;
+        this.stop();
+        this.opts.onTimeUp?.({
+          score: this.opts.game.board.score,
+          combo: this.opts.game.board.combo
+        });
+        return;
+      }
       if (this.lastMs === 0) this.lastMs = nowMs;
       const dt = Math.min(100, Math.max(0, nowMs - this.lastMs));
       this.lastMs = nowMs;
