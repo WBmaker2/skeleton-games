@@ -1,7 +1,15 @@
 // tests/math-jump.test.ts
 import { describe, expect, it } from 'vitest';
-import { MathJump } from './math-jump';
+import { MathJump, makeQuiz, type Quiz } from './math-jump';
 import type { PoseFrame } from '../../pose/types';
+
+function answerOf(quiz: Quiz): number {
+  const m = quiz.q.match(/^(\d+)([+\-×])(\d+)=\?$/);
+  if (!m) throw new Error(`bad quiz: ${quiz.q}`);
+  const a = Number(m[1]);
+  const b = Number(m[3]);
+  return m[2] === '+' ? a + b : m[2] === '-' ? a - b : a * b;
+}
 
 function centerFrame(x: number): PoseFrame {
   return {
@@ -46,5 +54,39 @@ describe('MathJump', () => {
     // 문제가 바뀌면 다시 생각 중 상태여야 함
     expect(g.isThinking).toBe(true);
     expect(g.thinkRemainingMs).toBeGreaterThan(0);
+  });
+  it('hides face mask for readability of the top quiz text', () => {
+    expect(new MathJump().hideFace).toBe(true);
+  });
+});
+
+describe('makeQuiz', () => {
+  it('always points answerIndex at the correct value with unique choices', () => {
+    for (let i = 0; i < 200; i++) {
+      const quiz = makeQuiz();
+      expect(quiz.choices).toHaveLength(3);
+      expect(new Set(quiz.choices).size).toBe(3);
+      expect(quiz.answerIndex).toBeGreaterThanOrEqual(0);
+      expect(quiz.answerIndex).toBeLessThanOrEqual(2);
+      expect(quiz.choices[quiz.answerIndex]).toBe(answerOf(quiz));
+      expect(quiz.choices.every((c) => c >= 0)).toBe(true);
+    }
+  });
+  it('never repeats the previous question', () => {
+    let prev: string | undefined;
+    const seen = new Set<string>();
+    for (let i = 0; i < 50; i++) {
+      const quiz = makeQuiz(prev);
+      expect(quiz.q).not.toBe(prev);
+      prev = quiz.q;
+      seen.add(quiz.q);
+    }
+    // 50문제 중 서로 다른 문제가 여러 개 나와야 함 (고정 3문제 순환이 아님)
+    expect(seen.size).toBeGreaterThan(3);
+  });
+  it('keeps kid-friendly ranges (no negative answers)', () => {
+    for (let i = 0; i < 200; i++) {
+      expect(answerOf(makeQuiz())).toBeGreaterThanOrEqual(0);
+    }
   });
 });
