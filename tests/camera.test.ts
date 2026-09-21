@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe('openCamera fallback chain', () => {
-  it('tries 480p first for tracking speed, then 720p', async () => {
+  it('tries 720p first for tracking quality', async () => {
     const stream720 = new MediaStream();
     const getUserMedia = vi
       .fn()
@@ -23,11 +23,11 @@ describe('openCamera fallback chain', () => {
     expect(out).toBe(video);
     expect(getUserMedia).toHaveBeenCalledTimes(2);
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
-      video: { width: 640, height: 480, facingMode: 'user' },
+      video: { width: 1280, height: 720, facingMode: 'user' },
       audio: false
     });
     expect(getUserMedia).toHaveBeenNthCalledWith(2, {
-      video: { width: 1280, height: 720, facingMode: 'user' },
+      video: { width: 640, height: 480 },
       audio: false
     });
     expect(video.srcObject).toBe(stream720);

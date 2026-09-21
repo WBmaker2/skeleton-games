@@ -25,7 +25,6 @@ export interface LoopOpts {
   // 얼굴 마스크 이미지 (없으면 스킵). 게임별 art/mask-<id>.png.
   face?: HTMLImageElement | null;
   onEvent?: GameEventHandler;
-  onDegrade?: (fps: number) => void;
 }
 
 // 축하 이펙트를 터뜨리는 성공 이벤트들 (12종 게임 공통).
@@ -45,13 +44,9 @@ function wristOf(frame: PoseFrame): { x: number; y: number } | null {
 export class GameLoop {  private raf = 0;
   private running = false;
   private lastMs = 0;
-  private lastInferMs = 0;
-  private lastInferDuration = 0;
   private monitor = new FpsMonitor();
-  private frames = 0;
   private particles: Particle[] = [];
   private dummyVideo: HTMLVideoElement | null = null;
-  private degradedNotified = false;
   constructor(private opts: LoopOpts) {}
 
   get fps(): number {
@@ -62,36 +57,23 @@ export class GameLoop {  private raf = 0;
     if (this.running) return;
     this.running = true;
     this.monitor.reset();
-    this.degradedNotified = false;
     this.lastMs = 0;
-    this.lastInferMs = 0;
     const tick = async (nowMs: number): Promise<void> => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(tick);
       if (this.lastMs === 0) this.lastMs = nowMs;
       const dt = Math.min(100, Math.max(0, nowMs - this.lastMs));
       this.lastMs = nowMs;
-      // 적응형 스로틀: 추론이 20ms 안에 끝나면 게이트 없이 매 프레임 추적하고,
-      // 느린 기기에서만 33ms(30fps) 간격을 유지한다.
-      const gate = this.lastInferDuration < 20 ? 0 : 33;
-      if (nowMs - this.lastInferMs < gate) return;
-      this.lastInferMs = nowMs;
+      // 저사양 지원 중단: 매 rAF마다 추론을 시도해 즉각 추적한다.
+      // 느린 기기에서는 estimate await 자체가 속도를 제한하므로 별도 게이트가 없다.
       this.monitor.sample(nowMs);
-      if (this.monitor.degraded && !this.degradedNotified) {
-        this.degradedNotified = true;
-        this.opts.onDegrade?.(this.monitor.fps);
-      }
-      this.frames += 1;
-      if (this.monitor.degraded && this.frames % 2 === 0) return;
       const video = this.opts.video ?? (this.dummyVideo ??= document.createElement('video'));
       let frame: PoseFrame;
-      const inferStart = performance.now();
       try {
         frame = await this.opts.engine.estimate(video);
       } catch {
         return;
       }
-      this.lastInferDuration = performance.now() - inferStart;
       const events = this.opts.game.tick(frame, dt);
       // 성공 이벤트 축하 이펙트: 손목 위치에 파티클 폭발.
       for (const e of events) {

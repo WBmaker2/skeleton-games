@@ -240,9 +240,6 @@ export function boot(): void {
           if (scoreEl) scoreEl.textContent = String(board.score);
           if (comboEl) comboEl.textContent = String(board.combo);
         }
-      },
-      onDegrade: (fps) => {
-        if (fpsEl) fpsEl.textContent = `저사양 모드 (${fps.toFixed(0)}fps, 15fps로 동작 중)`;
       }
     });
     loop.start();
@@ -251,7 +248,7 @@ export function boot(): void {
         clearInterval(fpsTimer);
         return;
       }
-      if (fpsEl && !fpsEl.textContent?.startsWith('저사양')) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드`;
+      if (fpsEl) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드`;
     }, 500));
   };
   window.addEventListener('hashchange', render);
@@ -262,13 +259,11 @@ export async function openCamera(deviceId?: string): Promise<HTMLVideoElement | 
   const video = document.getElementById('cam') as HTMLVideoElement | null;
   if (!video) return null;
   // 저장된 카메라가 있으면 먼저 정확히 지정해서 시도한다.
-  // 기본 해상도는 640x480 우선 (저사양 기기 추적 속도 향상: 모델 입력은 고정이라
-  // 정밀도 손실 없이 전송·디코딩 비용만 줄어든다).
+  // 저사양 지원 중단: 720p 우선으로 영상 품질을 확보한다.
   const attempts: MediaTrackConstraints[] = deviceId
     ? [{ deviceId: { exact: deviceId }, width: 1280, height: 720 }]
     : [];
   attempts.push(
-    { width: 640, height: 480, facingMode: 'user' },
     { width: 1280, height: 720, facingMode: 'user' },
     { width: 640, height: 480 }
   );
