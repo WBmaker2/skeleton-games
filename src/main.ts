@@ -289,12 +289,13 @@ export function boot(): void {
               input?.focus();
               return;
             }
-            saveScore(id, { name: name.slice(0, 12), score: board.score });
+            const saved = saveScore(id, { name: name.slice(0, 12), score: board.score });
             showRanks();
-            result.innerHTML =
-              `<p>${esc(name)}님, 리더보드에 등록됐어요!</p>` +
-              `<button type="button" id="again" class="btn">다시 도전</button>`;
-            wireAgain();
+            // 등록 직후 리더보드 모달로 본인 이름·점수·랭킹을 바로 확인.
+            openModal({
+              title: `${RULES[id].name} 리더보드`,
+              bodyHTML: boardHTML(id, { name: saved.name, score: saved.score })
+            });
           });
         }
         const wireAgain = () => {

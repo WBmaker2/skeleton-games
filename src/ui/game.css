@@ -94,6 +94,18 @@
   transform: scaleX(-1);
 }
 
+/* 폭탄 충격 흔들림 (loop.ts shake, 350ms). */
+.stage-frame canvas.shake {
+  animation: stage-shake 320ms ease;
+}
+
+@keyframes stage-shake {
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: -10px; }
+  50% { margin-left: 8px; }
+  75% { margin-left: -5px; }
+}
+
 /* 실시간 영상은 선명하게: 게임 요소는 캔버스 위에서 크게 그려 구분한다. */
 
 /* Scoreboard chips: shared shell, one metric each */
@@ -266,5 +278,8 @@
   .game-nav a,
   .btn {
     transition: none;
+  }
+  .stage-frame canvas.shake {
+    animation: none;
   }
 }

@@ -62,6 +62,24 @@
   font-weight: 600;
 }
 
+/* 갓 등록된 내 기록 강조 (모달에서 본인 확인용). */
+.board-new {
+  outline: 2px solid var(--lp-leaf-deep);
+  outline-offset: -2px;
+}
+
+.board-newtag {
+  display: inline-block;
+  margin-left: var(--lp-space-1);
+  padding: 0 var(--lp-space-2);
+  font-size: var(--lp-text-badge);
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--lp-leaf-deep);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
 .board-score {
   font-weight: 700;
   font-variant-numeric: tabular-nums;

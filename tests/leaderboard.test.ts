@@ -36,3 +36,17 @@ describe('boardHTML', () => {
     expect(html.indexOf('1등')).toBeLessThan(html.indexOf('해커'));
   });
 });
+
+describe('boardHTML highlight', () => {
+  it('marks the matching entry NEW', () => {
+    saveScore('duo', { name: '나', score: 20 });
+    saveScore('duo', { name: '너', score: 40 });
+    const html = boardHTML('duo', { name: '나', score: 20 });
+    expect(html).toContain('board-new');
+    expect(html).toContain('NEW');
+  });
+  it('marks nothing without highlight', () => {
+    saveScore('duo', { name: '나', score: 20 });
+    expect(boardHTML('duo')).not.toContain('board-new');
+  });
+});

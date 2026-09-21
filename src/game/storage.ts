@@ -22,10 +22,12 @@ function writeList(gameId: string, list: ScoreEntry[]): void {
   localStorage.setItem(`skelplay:${gameId}`, JSON.stringify(list.slice(0, 5)));
 }
 
-export function saveScore(gameId: string, entry: ScoreEntry): void {
+export function saveScore(gameId: string, entry: ScoreEntry): ScoreEntry {
+  const saved = { ...entry, date: entry.date ?? Date.now() };
   const list = readList(gameId);
-  list.push({ ...entry, date: entry.date ?? Date.now() });
+  list.push(saved);
   writeList(gameId, list);
+  return saved;
 }
 
 export function updateScore(gameId: string, index: number, entry: ScoreEntry): void {

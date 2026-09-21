@@ -159,3 +159,38 @@ describe('GameLoop time limit', () => {
     loop.stop();
   });
 });
+
+describe('GameLoop penalty effects', () => {
+  it('bursts red particles and shakes on bomb', async () => {
+    installRaf();
+    const engine = new FakeEngine();
+    engine.push({
+      width: 640, height: 480, timestamp: 0,
+      keypoints: [
+        { name: 'left_wrist', x: 100, y: 100, score: 1 },
+        { name: 'right_wrist', x: 500, y: 400, score: 1 }
+      ]
+    });
+    const game = new FruitNinja();
+    game.start();
+    game.fruits.length = 0;
+    game.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'bomb', alive: true });
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const loop = new GameLoop({
+      video: null,
+      canvas,
+      engine,
+      game,
+      calibration: { scale: 1, centerX: 320, mode: 'seated', shoulderWidth: 100 },
+      showSkeleton: false
+    });
+    loop.start();
+    pump(3, 40);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(loop.particleCount).toBeGreaterThan(0);
+    expect(canvas.classList.contains('shake')).toBe(true);
+    loop.stop();
+  });
+});

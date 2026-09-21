@@ -17,22 +17,28 @@ function fmtDate(ms?: number): string {
 }
 
 // 리더보드 목록. 메달은 모양(원·사각·외곽선)으로 순위를 구분한다 (WCAG 1.4.1).
-export function boardHTML(gameId: PlayableId): string {
+// highlight와 이름·점수가 같은 첫 행은 NEW 표시로 강조한다.
+export function boardHTML(gameId: PlayableId, highlight?: { name: string; score: number }): string {
   const list = topScores(gameId);
   if (list.length === 0) {
     return `<p class="board-empty">아직 기록이 없어요. 첫 주인공이 되어 보세요.</p>`;
   }
+  let marked = false;
   return (
     `<ol class="board">` +
     list
-      .map(
-        (s, i) =>
-          `<li class="board-row"><span class="medal medal-${Math.min(i + 1, 3)}" aria-hidden="true">${i + 1}</span>` +
-          `<span class="board-name">${esc(s.name)}</span>` +
+      .map((s, i) => {
+        const isNew =
+          !marked && highlight !== undefined && s.name === highlight.name && s.score === highlight.score;
+        if (isNew) marked = true;
+        return (
+          `<li class="board-row${isNew ? ' board-new' : ''}"><span class="medal medal-${Math.min(i + 1, 3)}" aria-hidden="true">${i + 1}</span>` +
+          `<span class="board-name">${esc(s.name)}${isNew ? ' <span class="board-newtag">NEW</span>' : ''}</span>` +
           `<span class="board-score">${s.score}점</span>` +
           (s.date ? `<span class="board-date">${esc(fmtDate(s.date))}</span>` : '') +
           `</li>`
-      )
+        );
+      })
       .join('') +
     `</ol>`
   );

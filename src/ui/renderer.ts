@@ -173,9 +173,17 @@ export interface Particle {
 }
 
 const BURST_COLORS = ['#dfff00', '#ff71ce', '#ffffff', '#00ffff'];
+export const PENALTY_COLORS = ['#ff3b30', '#8a8f98', '#22303c'];
 
 // 미션 성공 축하 파티클: 호출자가 배열을 보관하고 매 틱 tick/draw한다.
-export function spawnBurst(out: Particle[], x: number, y: number, n = 14): void {
+// colors를 넘기면 감점 등 다른 톤의 이펙트에도 쓴다.
+export function spawnBurst(
+  out: Particle[],
+  x: number,
+  y: number,
+  n = 14,
+  colors: string[] = BURST_COLORS
+): void {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2;
     const sp = 90 + Math.random() * 220;
@@ -187,7 +195,7 @@ export function spawnBurst(out: Particle[], x: number, y: number, n = 14): void 
       vy: Math.sin(a) * sp - 120,
       life,
       maxLife: life,
-      color: BURST_COLORS[i % BURST_COLORS.length],
+      color: colors[i % colors.length],
       size: 3 + Math.random() * 4
     });
   }
