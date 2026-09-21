@@ -86,4 +86,40 @@ describe('SquatRunner', () => {
     for (let i = 0; i < 30; i++) g.tick(squatFrame(true), 16);
     expect(g.distanceM).toBeGreaterThan(0);
   });
+
+  it('rewards perfect timing on the beat', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrame(true), 1600);
+    let events = [];
+    for (let i = 0; i < 25; i++) events.push(...g.tick(squatFrame(false), 16));
+    const duck = events.find((e) => e.type === 'duck');
+    expect(duck?.points).toBe(15);
+  });
+
+  it('gives fewer points off the beat', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrame(true), 800);
+    let events = [];
+    for (let i = 0; i < 25; i++) events.push(...g.tick(squatFrame(false), 16));
+    const duck = events.find((e) => e.type === 'duck');
+    expect(duck?.points).toBe(5);
+  });
+
+  it('counts one beat per interval', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 125; i++) g.tick(squatFrame(true), 16);
+    expect(g.beatCount).toBe(1);
+    expect(g.obstacles.length).toBe(1);
+  });
+
+  it('counts beats and spawns a low coin on the second beat', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 250; i++) g.tick(squatFrame(true), 16);
+    expect(g.beatCount).toBe(2);
+    expect(g.coins.some((c) => c.lane === 'low')).toBe(true);
+  });
 });

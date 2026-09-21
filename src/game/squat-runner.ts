@@ -24,16 +24,27 @@ export class SquatRunner implements Game {
   obstacles: RunnerObstacle[] = [];
   coins: RunnerCoin[] = [];
   distanceM = 0;
+  beatCount = 0;
   private running = false;
   private holdMs = 0;
   private elapsedMs = 0;
   private distancePx = 0;
   private scrollX = 0;
-  private obstacleMs = 0;
-  private coinMs = 0;
+  private beatClock = 0;
+  private beatAgeMs = 0;
+  private pendingHighMs: number[] = [];
 
   get speedPxPerSec(): number {
     return Math.min(700, 320 + (this.elapsedMs / 1000) * 4 + this.board.combo * 8);
+  }
+
+  // 박자 간격: 2.0초 시작 → 60초에 1.4초까지 가속.
+  get beatIntervalMs(): number {
+    return Math.max(1400, 2000 - (this.elapsedMs / 1000) * 10);
+  }
+
+  get beatClockMs(): number {
+    return this.beatClock;
   }
 
   start(): void {
@@ -48,8 +59,10 @@ export class SquatRunner implements Game {
     this.distancePx = 0;
     this.elapsedMs = 0;
     this.scrollX = 0;
-    this.obstacleMs = 0;
-    this.coinMs = 0;
+    this.beatCount = 0;
+    this.beatClock = 0;
+    this.beatAgeMs = 0;
+    this.pendingHighMs = [];
   }
   stop(): void {
     this.running = false;
@@ -113,8 +126,37 @@ export class SquatRunner implements Game {
       ctx.stroke();
     }
     ctx.restore();
+    // 박자 바: 다음 박자까지 진행률 + 박자 순간 펄스.
+    const interval = this.beatIntervalMs;
+    const frac = Math.min(1, this.beatClock / interval);
+    const bx = width * 0.25;
+    const bw = width * 0.5;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10, 16, 22, 0.6)';
+    ctx.fillRect(bx, 152, bw, 10);
+    ctx.fillStyle = '#dfff00';
+    ctx.fillRect(bx, 152, bw * frac, 10);
+    const pulse = Math.max(0, 1 - this.beatAgeMs / 400);
+    ctx.fillStyle = `rgba(223, 255, 0, ${0.5 + pulse * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(bx + bw + 18, 157, 8 + pulse * 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    const bpm = Math.round(60000 / interval);
     drawLabel(ctx, this.isDown ? '일어서세요!' : '앉으세요!', width / 2, 78, 40);
-    drawLabel(ctx, `${this.reps}회 · ${this.distanceM.toFixed(0)}m`, width / 2, 128, 28);
+    drawLabel(ctx, `${this.reps}회 · ${this.distanceM.toFixed(0)}m · ${bpm}BPM`, width / 2, 128, 28);
+  }
+  private onBeat(width: number, interval: number): void {
+    this.beatCount += 1;
+    this.beatAgeMs = 0;
+    const edge = width + 40;
+    if (this.beatCount % 2 === 1) {
+      this.spawnObstacle(edge);
+    } else {
+      this.spawnCoin('low', edge);
+    }
+    // 박자 사이 높은 코인: 서있는 구간에 도착하도록 절반 박자 뒤 스폰.
+    this.pendingHighMs.push(interval / 2);
   }
   tick(frame: PoseFrame, _dtMs: number): GameEvent[] {
     if (!this.running) return [];
@@ -124,6 +166,14 @@ export class SquatRunner implements Game {
     this.distancePx += speed * dt;
     this.distanceM = this.distancePx / 100;
     this.scrollX += speed * dt;
+    this.beatAgeMs += _dtMs;
+    // 박자 시계: 간격마다 onBeat 1회 (이동시간 ≈ 1박자라 스폰이 다음 박자에 도착).
+    const interval = this.beatIntervalMs;
+    this.beatClock += _dtMs;
+    while (this.beatClock >= interval) {
+      this.beatClock -= interval;
+      this.onBeat(frame.width, interval);
+    }
     // 스쿼트 판정 (기존 계약 유지).
     const hasSide = (side: 'left' | 'right'): boolean =>
       !!getByName(frame, `${side}_hip`) && !!getByName(frame, `${side}_knee`) && !!getByName(frame, `${side}_ankle`);
@@ -141,27 +191,36 @@ export class SquatRunner implements Game {
         this.isDown = true;
         this.reps += 1;
         this.board.comboHit();
-        this.board.add(10);
-        if (this.reps % 10 === 0) events.push({ type: 'rest', points: 0, label: '10회! 잠시 쉬세요' });
-        else events.push({ type: 'duck', points: 10, label: `${this.reps}회!` });
+        // 박자 판정: 최근 박자와 어긋남으로 Perfect/Good/어긋남.
+        const off = Math.min(this.beatClock, interval - this.beatClock);
+        if (this.reps % 10 === 0) {
+          events.push({ type: 'rest', points: 0, label: '10회! 잠시 쉬세요' });
+        } else if (off <= 150) {
+          this.board.add(15);
+          events.push({ type: 'duck', points: 15, label: `완벽한 박자! ${this.reps}회!` });
+        } else if (off <= 350) {
+          this.board.add(10);
+          events.push({ type: 'duck', points: 10, label: `좋은 박자! ${this.reps}회!` });
+        } else {
+          this.board.add(5);
+          events.push({ type: 'duck', points: 5, label: `${this.reps}회! (박자를 맞춰보세요)` });
+        }
       }
     } else {
       this.holdMs = 0;
       this.isDown = false;
     }
-    // 스폰: 장애물은 1600→900ms로 가속, 코인은 1100ms 고정.
+    // 박자 사이 높은 코인 스폰.
     const playerX = frame.width * 0.22;
-    this.obstacleMs += _dtMs;
-    const obstacleInterval = Math.max(900, 1600 - this.elapsedMs * 0.01);
-    if (this.obstacleMs > obstacleInterval) {
-      this.obstacleMs = 0;
-      this.spawnObstacle(frame.width + 40);
-    }
-    this.coinMs += _dtMs;
-    if (this.coinMs > 1100) {
-      this.coinMs = 0;
-      this.spawnCoin(undefined, frame.width + 40);
-    }
+    this.pendingHighMs = this.pendingHighMs
+      .map((ms) => ms - _dtMs)
+      .filter((ms) => {
+        if (ms <= 0) {
+          this.spawnCoin('high', frame.width + 40);
+          return false;
+        }
+        return true;
+      });
     for (const ob of this.obstacles) {
       if (!ob.alive) continue;
       ob.x -= speed * dt;
