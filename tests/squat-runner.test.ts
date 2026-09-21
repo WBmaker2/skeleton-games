@@ -122,4 +122,25 @@ describe('SquatRunner', () => {
     expect(g.beatCount).toBe(2);
     expect(g.coins.some((c) => c.lane === 'low')).toBe(true);
   });
+
+  it('previews seconds until the next sit', () => {
+    const g = new SquatRunner();
+    g.start();
+    expect(g.cueText()).toBe('앉기까지 2초');
+  });
+
+  it('says sit now inside the timing window', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrame(true), 1800);
+    expect(g.cueText()).toBe('지금 앉아!');
+  });
+
+  it('says stand up while squatting', () => {
+    const g = new SquatRunner();
+    g.start();
+    for (let i = 0; i < 25; i++) g.tick(squatFrame(false), 16);
+    expect(g.isDown).toBe(true);
+    expect(g.cueText()).toBe('일어서세요!');
+  });
 });

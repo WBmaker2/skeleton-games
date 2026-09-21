@@ -103,48 +103,77 @@ export class SquatRunner implements Game {
     ctx.beginPath();
     ctx.arc(playerX, groundY - ph - 14, 13, 0, Math.PI * 2);
     ctx.fill();
-    // 장애물: 머리 높이 오버헤드 바 (앉아야 통과).
+    // 장애물: 머리 높이 오버헤드 바 (앉아야 통과: 주황+↓).
     for (const ob of this.obstacles) {
       if (!ob.alive) continue;
       const barY = groundY - 118;
       ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(ob.x - 27, barY, 54, 26);
+      ctx.fillRect(ob.x - 27, barY, 54, 30);
       ctx.fillStyle = '#7c2d12';
       ctx.fillRect(ob.x - 27, barY, 54, 5);
-      ctx.fillRect(ob.x - 27, barY + 21, 54, 5);
+      ctx.fillRect(ob.x - 27, barY + 25, 54, 5);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('↓', ob.x, barY + 15);
     }
-    // 코인: high=서서, low=앉아서.
+    // 코인: low=앉아서(주황↓), high=서서(하늘↑).
     for (const c of this.coins) {
       if (!c.alive) continue;
-      const cy = c.lane === 'high' ? groundY - 128 : groundY - 26;
-      ctx.fillStyle = '#ffd23f';
+      const low = c.lane === 'low';
+      const cy = low ? groundY - 26 : groundY - 128;
+      ctx.fillStyle = low ? '#f59e0b' : '#22d3ee';
       ctx.beginPath();
       ctx.arc(c.x, cy, 14, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#7c5a00';
+      ctx.strokeStyle = low ? '#7c2d12' : '#0e7490';
       ctx.lineWidth = 3;
       ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(low ? '↓' : '↑', c.x, cy + 1);
     }
     ctx.restore();
-    // 박자 바: 다음 박자까지 진행률 + 박자 순간 펄스.
+    // 박자 바: 일어나는 시간(노랑) + 앉을 타이밍 윈도우(주황) + 펄스.
     const interval = this.beatIntervalMs;
     const frac = Math.min(1, this.beatClock / interval);
     const bx = width * 0.25;
     const bw = width * 0.5;
+    const winW = bw * Math.min(1, 350 / interval);
     ctx.save();
     ctx.fillStyle = 'rgba(10, 16, 22, 0.6)';
     ctx.fillRect(bx, 152, bw, 10);
     ctx.fillStyle = '#dfff00';
     ctx.fillRect(bx, 152, bw * frac, 10);
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.9)';
+    ctx.fillRect(bx + bw - winW, 152, winW, 10);
     const pulse = Math.max(0, 1 - this.beatAgeMs / 400);
     ctx.fillStyle = `rgba(223, 255, 0, ${0.5 + pulse * 0.5})`;
     ctx.beginPath();
     ctx.arc(bx + bw + 18, 157, 8 + pulse * 8, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('일어나', bx, 166);
+    ctx.textAlign = 'right';
+    ctx.fillText('앉아!', bx + bw, 166);
     ctx.restore();
     const bpm = Math.round(60000 / interval);
-    drawLabel(ctx, this.isDown ? '일어서세요!' : '앉으세요!', width / 2, 78, 40);
+    const cue = this.cueText();
+    drawLabel(ctx, cue, width / 2, 78, cue === '지금 앉아!' ? 48 : 40);
     drawLabel(ctx, `${this.reps}회 · ${this.distanceM.toFixed(0)}m · ${bpm}BPM`, width / 2, 128, 28);
+  }
+  // 다음 동작 예고: 박자 순간=앉기, 박자 사이=일어나기.
+  cueText(): string {
+    if (this.isDown) return '일어서세요!';
+    const toBeat = this.beatIntervalMs - this.beatClock;
+    if (toBeat <= 350) return '지금 앉아!';
+    return `앉기까지 ${Math.ceil(toBeat / 1000)}초`;
   }
   private onBeat(width: number, interval: number): void {
     this.beatCount += 1;
