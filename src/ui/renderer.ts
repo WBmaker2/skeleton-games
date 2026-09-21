@@ -1,5 +1,6 @@
 // src/ui/renderer.ts
 import type { PoseFrame } from '../pose/types';
+import { palmOf } from '../pose/geometry';
 
 const LINKS: [string, string][] = [
   ['left_shoulder', 'right_shoulder'],
@@ -137,13 +138,13 @@ export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void 
     ctx.lineTo(q.x, q.y);
     ctx.stroke();
   }
-  // 손 마커: 베기·잡기의 판정점(손목)을 동그라미로 표시.
+  // 손 마커: 베기·잡기의 판정점(손바닥 중심)을 동그라미로 표시.
   // 양손 동일: 과일 베기 등 양손을 동등하게 쓰는 게임에서
   // 한쪽만 강조하면 다른 쪽 손이 안 보이는 착시가 생긴다.
   // 노랑 이중 링으로 멀리서도 식별 (WCAG 1.4.1: 모양 단서).
-  for (const name of ['left_wrist', 'right_wrist']) {
-    const w = byName.get(name);
-    if (!w || (w.score ?? 0) < 0.3) continue;
+  for (const side of ['left', 'right'] as const) {
+    const w = palmOf(frame, side);
+    if (!w) continue;
     ctx.save();
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = '#22303c';

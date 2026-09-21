@@ -1,5 +1,5 @@
 import type { PoseFrame } from '../pose/types';
-import { getByName } from '../pose/geometry';
+import { palmOf } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
 import { drawStar } from '../ui/renderer';
@@ -38,10 +38,10 @@ export class DuoStars implements Game {
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
-    const lw = getByName(frame, 'left_wrist');
-    const rw = getByName(frame, 'right_wrist');
+    const lw = palmOf(frame, 'left');
+    const rw = palmOf(frame, 'right');
     const ok = (w: typeof lw, s: { x: number; y: number }): boolean =>
-      !!w && (w.score ?? 0) > 0.3 && Math.hypot(w.x - s.x, w.y - s.y) < 64;
+      !!w && Math.hypot(w.x - s.x, w.y - s.y) < 64;
     if (!ok(lw, this.starA) || !ok(rw, this.starB)) {
       this.holdMs = 0;
       return [];

@@ -4,6 +4,7 @@ import type { Calibration, PoseFrame } from '../pose/types';
 import type { Game, GameEvent } from './types';
 import type { ScoreBoard } from './engine';
 import { FpsMonitor } from '../perf/fps-monitor';
+import { palmOf } from '../pose/geometry';
 import { drawFaceMask, drawParticles, drawSkeleton, drawZones, spawnBurst, tickParticles, PENALTY_COLORS, type Particle } from '../ui/renderer';
 
 export type GameEventHandler = (events: GameEvent[], board: { score: number; combo: number }) => void;
@@ -42,11 +43,8 @@ const PENALTY = new Set([
 ]);
 
 function wristOf(frame: PoseFrame): { x: number; y: number } | null {
-  for (const name of ['right_wrist', 'left_wrist']) {
-    const w = frame.keypoints.find((k) => k.name === name);
-    if (w && (w.score ?? 0) > 0.3) return { x: w.x, y: w.y };
-  }
-  return null;
+  // 축하 파티클도 손바닥 중심에 터뜨린다 (마커와 같은 점).
+  return palmOf(frame, 'right') ?? palmOf(frame, 'left');
 }
 
 export class GameLoop {  private raf = 0;

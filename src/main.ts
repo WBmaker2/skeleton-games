@@ -132,18 +132,18 @@ export function boot(): void {
       `<nav class="game-nav" aria-label="게임 이동"><a href="#/">← 모든 게임</a></nav></header>` +
       `<main aria-label="게임 화면">` +
       `<p data-testid="route" hidden>${id}</p>` +
-      `<div class="stage-frame"><video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas></div>` +
+      `<div class="stage-wrap"><div class="stage-frame"><video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas></div>` +
+      `<div id="calib" class="overlay overlay-float"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
+      `<div id="result" class="overlay overlay-float" hidden></div></div>` +
       `<section class="hud" aria-label="점수판">` +
       `<div class="hud-chip"><span>점수</span><strong id="score">0</strong></div>` +
       `<div class="hud-chip"><span>콤보</span><strong id="combo">0</strong></div>` +
       `<div class="hud-chip"><span>남은 시간</span><strong id="time">1:00</strong></div>` +
       `<div class="hud-chip"><span>상태</span><strong id="fps">준비 중</strong></div></section>` +
       `<p id="hud" class="hud-msg">준비 중…</p>` +
-      `<div id="calib" class="overlay"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
       `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
       `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
       `<p class="shareline">공유: <span id="share"></span></p><div id="ranks">${''}</div>` +
-      `<div id="result" class="overlay" hidden></div>` +
       `<p class="helprow"><button type="button" id="howto" class="btn-small">게임 방법</button> ` +
       `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button> ` +
       `${adminDotHTML()}</p>` +

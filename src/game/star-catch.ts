@@ -1,5 +1,5 @@
 import type { PoseFrame } from '../pose/types';
-import { getByName } from '../pose/geometry';
+import { palmOf } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
 import { drawLabel, drawStar } from '../ui/renderer';
@@ -43,10 +43,10 @@ export class StarCatch implements Game {
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running || !this.star.alive) return [];
-    const wrists = [getByName(frame, 'left_wrist'), getByName(frame, 'right_wrist')].filter(
-      (w) => w && (w.score ?? 0) > 0.3
+    const palms = [palmOf(frame, 'left'), palmOf(frame, 'right')].filter(
+      (w): w is { x: number; y: number } => w !== null
     );
-    const near = wrists.some((w) => w && Math.hypot(w.x - this.star.x, w.y - this.star.y) < 56);
+    const near = palms.some((w) => Math.hypot(w.x - this.star.x, w.y - this.star.y) < 56);
     if (!near) {
       this.holdMs = 0;
       return [];

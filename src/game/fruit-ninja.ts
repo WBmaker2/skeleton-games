@@ -1,6 +1,6 @@
 // src/game/fruit-ninja.ts
 import type { PoseFrame } from '../pose/types';
-import { getByName } from '../pose/geometry';
+import { palmOf } from '../pose/geometry';
 import type { Game, GameEvent } from './types';
 import { ScoreBoard } from './engine';
 
@@ -78,11 +78,13 @@ export class FruitNinja implements Game {
       f.y += f.vy * dt;
       f.vy += 700 * dt;
     }
-    const wrists = [getByName(frame, 'left_wrist'), getByName(frame, 'right_wrist')].filter((w) => w && (w.score ?? 0) > 0.3);
+    const palms = [palmOf(frame, 'left'), palmOf(frame, 'right')].filter(
+      (w): w is { x: number; y: number } => w !== null
+    );
     const events: GameEvent[] = [];
     for (const f of this.fruits) {
       if (!f.alive) continue;
-      const hit = wrists.some((w) => w && Math.hypot(w.x - f.x, w.y - f.y) < 48 * this.radiusScale);
+      const hit = palms.some((w) => Math.hypot(w.x - f.x, w.y - f.y) < 48 * this.radiusScale);
       if (hit) {
         f.alive = false;
         if (f.kind === 'fruit') {

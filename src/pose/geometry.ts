@@ -32,3 +32,17 @@ export function bodyCenterX(frame: PoseFrame): number {
   if (xs.length === 0) return frame.width / 2;
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
+
+// 손바닥 중심 추정: 팔꿈치→손목 방향으로 전완 길이의 35% 연장.
+// 팔꿈치가 없으면 손목 위치 그대로 (기존 테스트·동작 호환).
+export function palmOf(frame: PoseFrame, side: 'left' | 'right'): Point | null {
+  const wrist = getByName(frame, `${side}_wrist`);
+  if (!wrist || (wrist.score ?? 0) < 0.3) return null;
+  const elbow = getByName(frame, `${side}_elbow`);
+  if (!elbow || (elbow.score ?? 0) < 0.3) return { x: wrist.x, y: wrist.y };
+  const dx = wrist.x - elbow.x;
+  const dy = wrist.y - elbow.y;
+  const len = Math.hypot(dx, dy) || 1e-6;
+  const k = (0.35 * len) / len;
+  return { x: wrist.x + dx * k, y: wrist.y + dy * k };
+}

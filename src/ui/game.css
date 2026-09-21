@@ -148,6 +148,48 @@
   line-height: 1.6;
 }
 
+/* 스테이지 + 플로팅 오버레이 (카운트다운·결과·에러를 영상 위에 겹침) */
+.stage-wrap {
+  position: relative;
+}
+
+.overlay.overlay-float {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lp-space-3);
+  margin: 0;
+  text-align: center;
+  background: rgba(16, 28, 38, 0.62);
+  border: none;
+  border-radius: var(--lp-card-radius);
+  box-shadow: none;
+}
+
+.overlay.overlay-float[hidden] {
+  display: none;
+}
+
+.overlay.overlay-float p {
+  margin: 0;
+  max-width: 36ch;
+  color: var(--lp-paper);
+  font-size: var(--lp-text-body);
+  line-height: 1.6;
+}
+
+.overlay.overlay-float label {
+  color: var(--lp-paper);
+}
+
+.overlay.overlay-float .form-err {
+  color: #ffb4ab;
+}
+
 /* Calibration / error overlay */
 .overlay {
   margin: var(--game-gap) 0 0;
@@ -164,7 +206,8 @@
   font-weight: 800;
   line-height: 1;
   text-align: center;
-  color: var(--lp-leaf-deep);
+  color: var(--lp-paper);
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   font-variant-numeric: tabular-nums;
 }
 
