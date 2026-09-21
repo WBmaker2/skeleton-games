@@ -85,3 +85,21 @@ describe('FruitNinja spawn spread', () => {
     }
   });
 });
+
+describe('FruitNinja floor', () => {
+  it('keeps falling fruit above a tall stage floor', () => {
+    const g = new FruitNinja();
+    g.start();
+    g.fruits.length = 0;
+    g.fruits.push({ x: 320, y: 600, vx: 0, vy: 0, kind: 'fruit', alive: true });
+    const tall: PoseFrame = {
+      width: 1280, height: 720, timestamp: 0,
+      keypoints: [
+        { name: 'left_wrist', x: 0, y: 0, score: 1 },
+        { name: 'right_wrist', x: 1279, y: 0, score: 1 }
+      ]
+    };
+    g.tick(tall, 16);
+    expect(g.fruits.length).toBe(1);
+  });
+});

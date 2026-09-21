@@ -111,3 +111,23 @@ describe('RhythmDance', () => {
     expect(seen).toContain('miss');
   });
 });
+
+describe('ZombieSteps judge line', () => {
+  it('waits until the tall stage floor', () => {
+    const g = new ZombieSteps();
+    g.start();
+    g.ghouls.length = 0;
+    g.ghouls.push({ zone: 0, y: 460, alive: true });
+    const tall = {
+      width: 1280, height: 720, timestamp: 0,
+      keypoints: [
+        { name: 'left_shoulder', x: 500, y: 100, score: 1 },
+        { name: 'right_shoulder', x: 600, y: 100, score: 1 },
+        { name: 'left_hip', x: 510, y: 200, score: 1 },
+        { name: 'right_hip', x: 590, y: 200, score: 1 }
+      ]
+    };
+    expect(g.tick(tall, 16)).toEqual([]);
+    expect(g.ghouls[0].alive).toBe(true);
+  });
+});

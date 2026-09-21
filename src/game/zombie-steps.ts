@@ -71,10 +71,12 @@ export class ZombieSteps implements Game {
     }
     const player = this.zoneOf(bodyCenterX(frame), frame.width);
     const events: GameEvent[] = [];
+    // 판정선도 스테이지 바닥 기준 (해상도 독립).
+    const judgeY = frame.height - 20;
     for (const gh of this.ghouls) {
       if (!gh.alive) continue;
       gh.y += 220 * dt;
-      if (gh.y < 460) continue;
+      if (gh.y < judgeY) continue;
       gh.alive = false;
       if (player !== gh.zone) {
         this.dodged += 1;

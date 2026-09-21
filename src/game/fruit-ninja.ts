@@ -104,7 +104,12 @@ export class FruitNinja implements Game {
         }
       }
     }
-    this.fruits = this.fruits.filter((f) => f.alive && f.y < 520);
+    // 스테이지 바닥(캔버스 높이 + 여유)에 닿아야 사라진다. 고정값이 아니라
+    // 프레임 해상도 기준이라 720p에서도 바닥까지 떨어진다.
+    const floorY = frame.height + 40;
+    this.fruits = this.fruits.filter(
+      (f) => f.alive && f.y < floorY && f.x > -40 && f.x < frame.width + 40
+    );
     return events;
   }
 }
