@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { YogaMirror } from './yoga-mirror';
+import { YogaMirror, YOGA_POSES } from './yoga-mirror';
 import type { Keypoint, PoseFrame } from '../../pose/types';
 
 function kp(name: string, x: number, y: number): Keypoint {
@@ -52,5 +52,19 @@ describe('YogaMirror', () => {
     expect(g.progress).toBeGreaterThan(0);
     g.tick(frame(armsDown()), 16);
     expect(g.progress).toBe(0);
+  });
+  it('completes warrior pose with both arms raised', () => {
+    const g = new YogaMirror();
+    g.start();
+    g.pose = YOGA_POSES[1];
+    expect(g.pose.name).toBe('전사');
+    // 양팔 65° 올림 → 연속 각도 약 155 (전사 템플릿과 일치).
+    const warriorFrame = frame([
+      kp('left_shoulder', 270, 120), kp('right_shoulder', 370, 120),
+      kp('left_wrist', 228, 30), kp('right_wrist', 412, 30)
+    ]);
+    const seen: string[] = [];
+    for (let i = 0; i < 200; i++) seen.push(...g.tick(warriorFrame, 16).map((e) => e.type));
+    expect(seen).toContain('pose-done');
   });
 });
