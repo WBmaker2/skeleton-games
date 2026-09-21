@@ -10,7 +10,7 @@ import type { Calibration, PoseFrame } from './pose/types';
 import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
 import { saveScore, shareLink } from './game/storage';
-import { adminDotHTML, boardHTML, refreshBoard, wireAdminDot } from './ui/leaderboard';
+import { boardHTML, refreshBoard } from './ui/leaderboard';
 import type { ScoreBoard } from './game/engine';
 import { renderLanding } from './ui/landing';
 import updateLogRaw from '../docs/UPDATELOG.md?raw';
@@ -145,12 +145,10 @@ export function boot(): void {
       `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
       `<p class="shareline">공유: <span id="share"></span></p><div id="ranks">${''}</div>` +
       `<p class="helprow"><button type="button" id="howto" class="btn-small">게임 방법</button> ` +
-      `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button> ` +
-      `${adminDotHTML()}</p>` +
+      `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>` +
       `</main></div></div>`;
     wireUpdateLog(app);
     wireHowTo(app, id);
-    wireAdminDot(app, () => refreshBoard(app, id));
     refreshBoard(app, id);
     void start(id);
   };
