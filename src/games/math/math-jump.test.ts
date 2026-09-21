@@ -70,8 +70,8 @@ describe('MathJump', () => {
     g.start();
     g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
     expect(g.isThinking).toBe(true);
-    // 생각 시간이 끝나기 전이라도 정답 자리에서 양손을 올리면 즉시 정답
-    g.tick(centerFrame(550), 16);
+    // 예열(1.2초)이 지난 뒤 정답 자리에서 양손을 올리면 즉시 정답
+    for (let i = 0; i < 80; i++) g.tick(centerFrame(550), 16);
     const events = g.tick(centerFrame(550, 60), 16);
     expect(events.some((e) => e.type === 'correct')).toBe(true);
     // 새 문제의 생각 시간이 다시 시작됨
@@ -81,15 +81,41 @@ describe('MathJump', () => {
     const g = new MathJump();
     g.start();
     g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
-    g.tick(centerFrame(100), 16);
+    for (let i = 0; i < 80; i++) g.tick(centerFrame(100), 16);
     const events = g.tick(centerFrame(100, 60), 16);
     expect(events.some((e) => e.type === 'wrong')).toBe(true);
+  });
+  it('ignores both-hands-up during warmup after a new question', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    // 문제 시작 직후(예열 전) 양손을 올렸다가 계속 들고 있어도 판정 없음
+    g.tick(centerFrame(550), 16);
+    expect(g.tick(centerFrame(550, 60), 16).length).toBe(0);
+    const held: string[] = [];
+    for (let i = 0; i < 100; i++) held.push(...g.tick(centerFrame(550, 60), 16).map((e) => e.type));
+    expect(held.length).toBe(0);
+    // 손을 내렸다가 예열 후에 다시 들어야 발동
+    g.tick(centerFrame(550, 150), 16);
+    expect(g.tick(centerFrame(550, 60), 16).length).toBeGreaterThan(0);
+  });
+  it('ignores both-hands-up right after moving zones', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    for (let i = 0; i < 80; i++) g.tick(centerFrame(100), 16);
+    // 다른 자리로 옮기자마자 양손을 올리면 판정 없음 (자리 안정 전)
+    g.tick(centerFrame(550), 16);
+    expect(g.tick(centerFrame(550, 60), 16).length).toBe(0);
+    // 같은 자리에서 잠시 머문 뒤 내렸다 다시 들면 정답
+    for (let i = 0; i < 25; i++) g.tick(centerFrame(550, 150), 16);
+    expect(g.tick(centerFrame(550, 60), 16).some((e) => e.type === 'correct')).toBe(true);
   });
   it('held-up hands do not chain-trigger next questions', () => {
     const g = new MathJump();
     g.start();
     g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
-    g.tick(centerFrame(550), 16);
+    for (let i = 0; i < 80; i++) g.tick(centerFrame(550), 16);
     expect(g.tick(centerFrame(550, 60), 16).length).toBeGreaterThan(0);
     // 손을 든 채로 있으면 다음 문제가 저절로 넘어가지 않음
     const chained: string[] = [];

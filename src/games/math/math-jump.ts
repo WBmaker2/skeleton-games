@@ -12,6 +12,11 @@ export interface Quiz { q: string; choices: [number, number, number]; answerInde
 export const MATH_THINK_MS = 3500;
 export const MATH_DWELL_MS = 600;
 export const MATH_HAND_UP_DWELL_MS = 300;
+// 양손 제출 3중 가드: 문제 시작 후 예열 시간이 지나고, 손을 새로 들어 올린
+// 순간이며, 같은 자리에 잠시 머물렀을 때만 즉시 판정한다.
+// (문제 전환 직후 손을 내렸다 올리는 동작에 오답이 연쇄되는 것 방지)
+export const MATH_INSTANT_ARM_MS = 1200;
+export const MATH_INSTANT_STABLE_MS = 300;
 
 // 고정 3문제 순환 대신 매번 새로 만드는 랜덤 문제 은행.
 // 초등 수준: 덧셈·뺄셈(음수 없음)·구구단 곱셈, 오답은 정답 근처 그럴듯한 값.
@@ -83,6 +88,8 @@ export class MathJump implements Game {
   // 양손 제출이 발동하려면 새 문제 후 한 번은 양손이 내려가 있어야 한다.
   // (이전 문제에서 든 손이 그대로 다음 문제를 넘겨버리는 것 방지)
   private handsDownSeen = false;
+  private prevBothUp = false;
+  private zoneSinceMs = 0;
 
   get isThinking(): boolean {
     return this.elapsedMs < MATH_THINK_MS;
@@ -104,6 +111,8 @@ export class MathJump implements Game {
     this.elapsedMs = 0;
     this.lastZone = null;
     this.handsDownSeen = false;
+    this.prevBothUp = false;
+    this.zoneSinceMs = 0;
   }
   stop(): void {
     this.running = false;
@@ -139,6 +148,8 @@ export class MathJump implements Game {
     this.lastZone = null;
     this.elapsedMs = 0;
     this.handsDownSeen = false;
+    this.prevBothUp = false;
+    this.zoneSinceMs = 0;
   }
   private judge(zone: 0 | 1 | 2): GameEvent[] {
     const correct = zone === this.quiz.answerIndex;
@@ -174,26 +185,32 @@ export class MathJump implements Game {
     const rs = getByName(frame, 'right_shoulder');
     const leftUp = lw && ls ? lw.y < ls.y - 20 : false;
     const rightUp = rw && rs ? rw.y < rs.y - 20 : false;
-    // 양손 제출: 생각 시간이 끝나기 전이라도, 자리 이동 후 양손을 어깨 위로
-    // 올리면 그 순간 바로 판정한다. 새 문제마다 손을 한 번 내려야 발동한다.
-    if (!leftUp || !rightUp) this.handsDownSeen = true;
-    if (leftUp && rightUp && this.handsDownSeen) {
+    // 자리 추적은 생각 시간과 무관하게 항상 갱신 (자리 안정 가드용).
+    if (zone !== this.lastZone) {
+      this.lastZone = zone;
+      this.zoneSinceMs = this.elapsedMs;
+      this.dwellMs = 0;
+    }
+    // 양손 제출: 생각 시간이 끝나기 전이라도 즉시 판정한다.
+    // 단, 문제 전환 직후 오발동을 막기 위해 3중 가드를 둔다.
+    // (1) 손 내림 리암 (2) 내림→올림 상승 엣지 (3) 예열+자리 안정
+    const bothUp = leftUp && rightUp;
+    const edgeUp = bothUp && !this.prevBothUp;
+    this.prevBothUp = bothUp;
+    if (!bothUp) this.handsDownSeen = true;
+    const armed = this.elapsedMs >= MATH_INSTANT_ARM_MS;
+    const stable = this.elapsedMs - this.zoneSinceMs >= MATH_INSTANT_STABLE_MS;
+    if (edgeUp && this.handsDownSeen && armed && stable) {
       this.handsDownSeen = false;
       return this.judge(zone);
     }
     // 생각 시간에는 양손 제출 외에는 답을 확정하지 않는다.
     if (this.isThinking) {
       this.dwellMs = 0;
-      this.lastZone = null;
       return [];
     }
     const handUp = [leftUp, rightUp].some(Boolean);
-    if (zone === this.lastZone) {
-      this.dwellMs += dtMs;
-    } else {
-      this.lastZone = zone;
-      this.dwellMs = 0;
-    }
+    this.dwellMs += dtMs;
     const confirmed = this.dwellMs > MATH_DWELL_MS || (handUp && this.dwellMs > MATH_HAND_UP_DWELL_MS);
     if (!confirmed) return [];
     return this.judge(zone);
