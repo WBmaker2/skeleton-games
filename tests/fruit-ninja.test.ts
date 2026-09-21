@@ -103,3 +103,18 @@ describe('FruitNinja floor', () => {
     expect(g.fruits.length).toBe(1);
   });
 });
+
+describe('FruitNinja wide stage', () => {
+  it('spreads zones across 1280 width', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const g = new FruitNinja();
+    g.start();
+    g.spawn(1280);
+    g.spawn(1280);
+    g.spawn(1280);
+    const xs = g.fruits.map((f) => f.x);
+    expect(xs[0]).toBeCloseTo(1280 / 6, 0);
+    expect(xs[1]).toBeCloseTo(640, 0);
+    expect(xs[2]).toBeCloseTo((1280 * 5) / 6, 0);
+  });
+});

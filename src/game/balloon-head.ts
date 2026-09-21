@@ -67,7 +67,12 @@ export class BalloonHead implements Game {
       return [{ type: 'bump', points: 5, label: `${this.hits}번 받았어요!` }];
     }
     if (b.y > frame.height + 40) {
-      this.balloon = { x: 80 + Math.random() * 480, y: -20, vy: 60, alive: true };
+      this.balloon = {
+        x: frame.width * 0.12 + Math.random() * frame.width * 0.76,
+        y: -20,
+        vy: 60,
+        alive: true
+      };
       this.board.comboMiss();
       return [{ type: 'drop', points: 0, label: '풍선이 떨어졌어요' }];
     }

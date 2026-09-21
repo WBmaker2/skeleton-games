@@ -53,14 +53,17 @@ export class FruitNinja implements Game {
       ctx.restore();
     }
   }
-  spawn(): void {
+  spawn(width = 640): void {
     const kind = Math.random() < 0.2 ? 'bomb' : 'fruit';
     // 좌우 편중 방지: 왼쪽·가운데·오른쪽 구역을 차례로 순환하고
     // 구역 안에서만 jitter를 준다. 연속 스폰이 한쪽에 몰리지 않는다.
+    // 너비는 프레임 기준 (720p 등 넓은 화면에서도 전역에 분포).
     const zone = this.spawnCount % 3;
     this.spawnCount += 1;
-    const center = 640 * (zone * 2 + 1) / 6;
-    const x = Math.min(600, Math.max(40, center + (Math.random() - 0.5) * 140));
+    const center = (width * (zone * 2 + 1)) / 6;
+    const lo = width * 0.06;
+    const hi = width * 0.94;
+    const x = Math.min(hi, Math.max(lo, center + (Math.random() - 0.5) * width * 0.22));
     // 위에서 떨어지기: 화면 위(y=-20) 스폰 후 낙하. 빠른 상승 대신
     // 빠른 낙하 + 강한 중력으로 박진감 있게 빽빽히 떨어진다.
     this.fruits.push({ x, y: -20, vx: (Math.random() - 0.5) * 120, vy: 120 + Math.random() * 140, kind, alive: true });
@@ -71,7 +74,7 @@ export class FruitNinja implements Game {
     this.spawnMs += dtMs;
     if (this.spawnMs > 400) {
       this.spawnMs = 0;
-      this.spawn();
+      this.spawn(frame.width);
     }
     for (const f of this.fruits) {
       f.x += f.vx * dt;
@@ -93,8 +96,8 @@ export class FruitNinja implements Game {
           this.slices += 1;
           // 10개마다 2개 동시 스폰으로 박진감 유지.
           if (this.slices % 10 === 0) {
-            this.spawn();
-            this.spawn();
+            this.spawn(frame.width);
+            this.spawn(frame.width);
           }
           events.push({ type: 'slice', points: 10, label: '과일 베기!' });
         } else {

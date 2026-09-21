@@ -119,3 +119,21 @@ describe('RecycleSort', () => {
   });
 });
 
+
+describe('DuoStars wide stage', () => {
+  it('places stars at quarter points of wide frames', async () => {
+    const { DuoStars } = await import('../src/game/duo-stars');
+    const g = new DuoStars();
+    g.start();
+    const wide = {
+      width: 1280, height: 720, timestamp: 0,
+      keypoints: [
+        { name: 'left_wrist', x: 0, y: 0, score: 1 },
+        { name: 'right_wrist', x: 1279, y: 0, score: 1 }
+      ]
+    };
+    g.tick(wide, 16);
+    expect(g.starA.x).toBeCloseTo(320, 0);
+    expect(g.starB.x).toBeCloseTo(960, 0);
+  });
+});

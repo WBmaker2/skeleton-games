@@ -33,8 +33,12 @@ export class StarCatch implements Game {
     if (this.star.alive) drawStar(ctx, this.star.x, this.star.y, 34, '#dfff00');
     drawLabel(ctx, `${this.caught}개`, width - 70, 50, 30);
   }
-  respawn(): void {
-    this.star = { x: 80 + this.rnd() * 480, y: 80 + this.rnd() * 240, alive: true };
+  respawn(width = 640, height = 480): void {
+    this.star = {
+      x: width * 0.12 + this.rnd() * width * 0.76,
+      y: height * 0.15 + this.rnd() * height * 0.45,
+      alive: true
+    };
     this.holdMs = 0;
   }
   private rnd(): number {
@@ -58,7 +62,7 @@ export class StarCatch implements Game {
     this.board.comboHit();
     this.board.add(10);
     const n = this.caught;
-    this.respawn();
+    this.respawn(frame.width, frame.height);
     return [{ type: 'catch', points: 10, label: `별 ${n}개!` }];
   }
 }

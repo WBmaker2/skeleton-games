@@ -13,12 +13,14 @@ export class DuoStars implements Game {
   pairs = 0;
   private running = false;
   private holdMs = 0;
+  private placedWidth = 0;
 
   start(): void {
     this.running = true;
     this.board.reset();
     this.pairs = 0;
     this.holdMs = 0;
+    this.placedWidth = 0;
   }
   stop(): void {
     this.running = false;
@@ -38,6 +40,12 @@ export class DuoStars implements Game {
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
+    // 별 위치를 화면 너비에 맞춤 (넓은 화면에서도 1/4·3/4 지점).
+    if (this.placedWidth !== frame.width) {
+      this.placedWidth = frame.width;
+      this.starA = { x: frame.width * 0.25, y: 140 };
+      this.starB = { x: frame.width * 0.75, y: 140 };
+    }
     const lw = palmOf(frame, 'left');
     const rw = palmOf(frame, 'right');
     const ok = (w: typeof lw, s: { x: number; y: number }): boolean =>
