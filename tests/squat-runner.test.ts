@@ -160,4 +160,57 @@ describe('SquatRunner', () => {
     g.tick(squatFrame(true), 16);
     expect(g.squatDepth).toBe(0);
   });
+
+  function squatFrameNoAnkle(): PoseFrame {
+    return {
+      width: 640, height: 480, timestamp: 0,
+      keypoints: [
+        { name: 'left_hip', x: 200, y: 200, score: 1 },
+        { name: 'left_knee', x: 300, y: 300, score: 1 }
+      ]
+    };
+  }
+
+  function midSquatFrame(): PoseFrame {
+    return {
+      width: 640, height: 480, timestamp: 0,
+      keypoints: [
+        { name: 'left_hip', x: 250, y: 200, score: 1 },
+        { name: 'left_knee', x: 300, y: 300, score: 1 },
+        { name: 'left_ankle', x: 250, y: 400, score: 1 }
+      ]
+    };
+  }
+
+  function emptyFrame(): PoseFrame {
+    return { width: 640, height: 480, timestamp: 0, keypoints: [] };
+  }
+
+  it('holds the squat when the ankle is not visible', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrameNoAnkle(), 16);
+    expect(g.squatDepth).toBeGreaterThan(0.5);
+    expect(g.cueText()).toBe('일어서세요!');
+  });
+
+  it('keeps depth when no keypoints are detected', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(squatFrame(false), 16);
+    g.tick(emptyFrame(), 16);
+    expect(g.squatDepth).toBe(1);
+  });
+
+  it('uses hysteresis around the middle zone', () => {
+    const g = new SquatRunner();
+    g.start();
+    g.tick(midSquatFrame(), 16);
+    expect(g.cueText()).toBe('앉기까지 2초');
+    const h = new SquatRunner();
+    h.start();
+    h.tick(squatFrame(false), 16);
+    h.tick(midSquatFrame(), 16);
+    expect(h.cueText()).toBe('일어서세요!');
+  });
 });

@@ -44,6 +44,25 @@ export function boardHTML(gameId: PlayableId, highlight?: { name: string; score:
   );
 }
 
+// 60초 종료 오버레이: 등록 전(폼+다시 도전)과 등록 후(다시 도전만).
+export function resultFormHTML(score: number): string {
+  return (
+    `<p>60초 챌린지 종료! ${score}점</p>` +
+    `<form id="regform"><p><label for="regname">리더보드에 올릴 이름</label></p>` +
+    `<p><input id="regname" name="regname" maxlength="12" autocomplete="off" aria-describedby="reg-err"> ` +
+    `<button type="submit" class="btn">등록</button></p>` +
+    `<p id="reg-err" class="form-err"></p></form>` +
+    `<button type="button" id="again" class="btn">다시 도전</button>`
+  );
+}
+
+export function resultDoneHTML(score: number): string {
+  return (
+    `<p>60초 챌린지 종료! ${score}점 — 등록 완료!</p>` +
+    `<button type="button" id="again" class="btn">다시 도전</button>`
+  );
+}
+
 export function refreshBoard(root: ParentNode, gameId: PlayableId): void {
   const ol = root.querySelector('#ranks');
   if (ol) ol.innerHTML = boardHTML(gameId);

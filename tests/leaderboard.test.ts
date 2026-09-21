@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from 'vitest';
 import { isUnlocked, lock, unlock } from '../src/ui/admin';
-import { boardHTML } from '../src/ui/leaderboard';
+import { boardHTML, resultDoneHTML, resultFormHTML } from '../src/ui/leaderboard';
 import { saveScore } from '../src/game/storage';
 
 afterEach(() => {
@@ -48,5 +48,17 @@ describe('boardHTML highlight', () => {
   it('marks nothing without highlight', () => {
     saveScore('duo', { name: '나', score: 20 });
     expect(boardHTML('duo')).not.toContain('board-new');
+  });
+});
+
+describe('result overlay states', () => {
+  it('registration state shows the form', () => {
+    expect(resultFormHTML(100)).toContain('regform');
+    expect(resultFormHTML(100)).toContain('다시 도전');
+  });
+  it('done state hides the form and keeps retry', () => {
+    const html = resultDoneHTML(100);
+    expect(html).toContain('다시 도전');
+    expect(html).not.toContain('regform');
   });
 });

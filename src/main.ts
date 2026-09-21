@@ -10,7 +10,7 @@ import type { Calibration, PoseFrame } from './pose/types';
 import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
 import { saveScore, shareLink } from './game/storage';
-import { boardHTML, refreshBoard } from './ui/leaderboard';
+import { boardHTML, refreshBoard, resultDoneHTML, resultFormHTML } from './ui/leaderboard';
 import type { ScoreBoard } from './game/engine';
 import { renderLanding } from './ui/landing';
 import updateLogRaw from '../docs/UPDATELOG.md?raw';
@@ -270,13 +270,7 @@ export function boot(): void {
             `<button type="button" id="again" class="btn">다시 도전</button>`;
         } else {
           // 이름 등록 폼: 빈 이름은 등록 불가 (색이 아닌 문구로 안내, WCAG 3.3.1).
-          result.innerHTML =
-            `<p>60초 챌린지 종료! ${board.score}점</p>` +
-            `<form id="regform"><p><label for="regname">리더보드에 올릴 이름</label></p>` +
-            `<p><input id="regname" name="regname" maxlength="12" autocomplete="off" aria-describedby="reg-err"> ` +
-            `<button type="submit" class="btn">등록</button></p>` +
-            `<p id="reg-err" class="form-err"></p></form>` +
-            `<button type="button" id="again" class="btn">다시 도전</button>`;
+          result.innerHTML = resultFormHTML(board.score);
           result.querySelector('#regform')?.addEventListener('submit', (e) => {
             e.preventDefault();
             const input = result.querySelector('#regname') as HTMLInputElement | null;
@@ -294,6 +288,9 @@ export function boot(): void {
               title: `${RULES[id].name} 리더보드`,
               bodyHTML: boardHTML(id, { name: saved.name, score: saved.score })
             });
+            // 등록 완료 후에는 폼을 치우고 다시 도전만 남긴다.
+            result.innerHTML = resultDoneHTML(board.score);
+            wireAgain();
           });
         }
         const wireAgain = () => {

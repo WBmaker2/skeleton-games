@@ -28,6 +28,8 @@ export class SquatRunner implements Game {
   // 스쿼트 깊이 0(서있음)~1(완전 앉음): 매 프레임 즉시 갱신 (시각·판정용).
   // 횟수 인정(isDown)은 기존 300ms 홀드 유지.
   squatDepth = 0;
+  // 앉은 상태 히스테리시스: 0.6에서 진입, 0.35에서 해제 (경계 떨림 방지).
+  ducking = false;
   private running = false;
   private holdMs = 0;
   private elapsedMs = 0;
@@ -67,6 +69,7 @@ export class SquatRunner implements Game {
     this.beatAgeMs = 0;
     this.pendingHighMs = [];
     this.squatDepth = 0;
+    this.ducking = false;
   }
   stop(): void {
     this.running = false;
@@ -174,11 +177,37 @@ export class SquatRunner implements Game {
     drawLabel(ctx, `${this.reps}회 · ${this.distanceM.toFixed(0)}m · ${bpm}BPM`, width / 2, 128, 28);
   }
   // 다음 동작 예고: 박자 순간=앉기, 박자 사이=일어나기.
+  // 안내·판정이 같은 히스테리시스 상태를 봐서 서로 어긋나지 않는다.
   cueText(): string {
-    if (this.squatDepth >= 0.5) return '일어서세요!';
+    if (this.ducking) return '일어서세요!';
     const toBeat = this.beatIntervalMs - this.beatClock;
     if (toBeat <= 350) return '지금 앉아!';
     return `앉기까지 ${Math.ceil(toBeat / 1000)}초`;
+  }
+  // 깊이 추정: 발목이 안 보여도 허벅지 기울기로 추정하고,
+  // 쓸 키포인트가 하나도 없으면 null (이전 깊이 유지 → 깜빡임 방지).
+  private depthOf(frame: PoseFrame): number | null {
+    let best: number | null = null;
+    for (const side of ['left', 'right'] as const) {
+      const hip = getByName(frame, `${side}_hip`);
+      const knee = getByName(frame, `${side}_knee`);
+      if (!hip || !knee) continue;
+      const ankle = getByName(frame, `${side}_ankle`);
+      let d: number;
+      if (ankle) {
+        d = (150 - angleDeg(hip, knee, ankle)) / 55;
+      } else {
+        // 허벅지와 연직선 사이 기울기: 서있음 0° → 앉음 70°.
+        const tx = knee.x - hip.x;
+        const ty = knee.y - hip.y;
+        const len = Math.hypot(tx, ty) || 1e-6;
+        const cos = Math.min(1, Math.max(-1, ty / len));
+        d = (Math.acos(cos) * 180) / Math.PI / 70;
+      }
+      const cd = Math.min(1, Math.max(0, d));
+      best = best === null ? cd : Math.max(best, cd);
+    }
+    return best;
   }
   private onBeat(width: number, interval: number): void {
     this.beatCount += 1;
@@ -208,21 +237,14 @@ export class SquatRunner implements Game {
       this.beatClock -= interval;
       this.onBeat(frame.width, interval);
     }
-    // 스쿼트 판정 (기존 계약 유지).
-    const hasSide = (side: 'left' | 'right'): boolean =>
-      !!getByName(frame, `${side}_hip`) && !!getByName(frame, `${side}_knee`) && !!getByName(frame, `${side}_ankle`);
-    const leftOk = hasSide('left');
-    const rightOk = hasSide('right');
-    let angle: number;
-    if (leftOk && rightOk) angle = Math.min(kneeAngle(frame, 'left'), kneeAngle(frame, 'right'));
-    else if (leftOk) angle = kneeAngle(frame, 'left');
-    else if (rightOk) angle = kneeAngle(frame, 'right');
-    else angle = 180;
     const events: GameEvent[] = [];
-    // 시각·판정용 깊이는 홀드 없이 즉시 반영 (150°=섬, 95°=완전 앉음).
-    this.squatDepth = Math.min(1, Math.max(0, (150 - angle) / 55));
-    const ducking = this.squatDepth >= 0.5;
-    if (angle < 100) {
+    // 깊이는 홀드 없이 즉시 반영. 키포인트가 비면 이전 값 유지.
+    const target = this.depthOf(frame);
+    if (target !== null) this.squatDepth = target;
+    if (this.squatDepth >= 0.6) this.ducking = true;
+    else if (this.squatDepth <= 0.35) this.ducking = false;
+    const ducking = this.ducking;
+    if (ducking) {
       this.holdMs += _dtMs;
       if (!this.isDown && this.holdMs > 300) {
         this.isDown = true;
