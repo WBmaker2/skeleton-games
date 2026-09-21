@@ -105,13 +105,14 @@ export class MathJump implements Game {
     this.running = false;
   }
   draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    drawLabel(ctx, this.quiz.q, width / 2, 52, 36);
+    // 문제 텍스트는 3배 크기(108px)로 크게 표시하고, 상태 안내·바는 아래로 내린다.
+    drawLabel(ctx, this.quiz.q, width / 2, 120, 108);
     if (this.isThinking) {
       const secs = Math.ceil(this.thinkRemainingMs / 1000);
-      drawLabel(ctx, `잘 보고 생각해요… ${secs}`, width / 2, 96, 24);
-      drawBar(ctx, width / 2 - 130, 116, 260, 12, this.thinkFrac, '#dfff00');
+      drawLabel(ctx, `잘 보고 생각해요… ${secs}`, width / 2, 200, 28);
+      drawBar(ctx, width / 2 - 130, 224, 260, 12, this.thinkFrac, '#dfff00');
     } else {
-      drawLabel(ctx, '정답 쪽으로 이동!', width / 2, 96, 24);
+      drawLabel(ctx, '정답 쪽으로 이동!', width / 2, 200, 28);
     }
     const labels = [String(this.quiz.choices[0]), String(this.quiz.choices[1]), String(this.quiz.choices[2])];
     for (let i = 0; i < 3; i++) {

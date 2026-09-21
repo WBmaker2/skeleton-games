@@ -58,6 +58,23 @@ describe('MathJump', () => {
   it('hides face mask for readability of the top quiz text', () => {
     expect(new MathJump().hideFace).toBe(true);
   });
+  it('draws the quiz text 3x large (108px)', () => {
+    const fonts: string[] = [];
+    const fn = (..._args: unknown[]): undefined => undefined;
+    const ctx = new Proxy({}, {
+      get: (_t, p) => (p === 'canvas' ? undefined : fn),
+      set: (t, p, v) => {
+        if (p === 'font') fonts.push(String(v));
+        (t as Record<string | symbol, unknown>)[p] = v;
+        return true;
+      }
+    }) as unknown as CanvasRenderingContext2D;
+    const g = new MathJump();
+    g.start();
+    g.draw(ctx, 640, 480);
+    // 첫 번째로 그리는 글자가 문제 텍스트: 기존 36px의 3배
+    expect(fonts[0]).toContain('108px');
+  });
 });
 
 describe('makeQuiz', () => {
