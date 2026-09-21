@@ -68,3 +68,34 @@ describe('celebration particles', () => {
     expect(arcs).toBe(5);
   });
 });
+
+describe('face mask overlay', () => {
+  it('skips missing or unloaded images', async () => {
+    const { drawFaceMask } = await import('../src/ui/renderer');
+    const ctx = stubCtx();
+    const frame = {
+      width: 640, height: 480, timestamp: 0,
+      keypoints: [{ name: 'nose', x: 320, y: 100, score: 1 }]
+    };
+    expect(() => drawFaceMask(ctx, frame, null)).not.toThrow();
+    expect(() => drawFaceMask(ctx, frame, undefined)).not.toThrow();
+    expect(() => drawFaceMask(ctx, frame, { complete: false } as HTMLImageElement)).not.toThrow();
+  });
+  it('draws centered square crop from loaded image', async () => {
+    const { drawFaceMask } = await import('../src/ui/renderer');
+    const calls: number[][] = [];
+    const ctx = stubCtx();
+    (ctx as unknown as Record<string, unknown>).drawImage = (...a: unknown[]) => {
+      calls.push(a as number[]);
+    };
+    const img = { complete: true, naturalWidth: 800, naturalHeight: 600 } as HTMLImageElement;
+    const frame = {
+      width: 640, height: 480, timestamp: 0,
+      keypoints: [{ name: 'nose', x: 320, y: 100, score: 1 }]
+    };
+    drawFaceMask(ctx, frame, img);
+    expect(calls).toHaveLength(1);
+    // source rect is centered square 600x600, dest centered on nose
+    expect(calls[0].slice(1, 5)).toEqual([100, 0, 600, 600]);
+  });
+});

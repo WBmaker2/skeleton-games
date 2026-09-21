@@ -112,8 +112,12 @@ export function drawFaceMask(
   const sw =
     ls && rs ? Math.max(40, Math.hypot(ls.x - rs.x, ls.y - rs.y)) : 100;
   const size = sw * 1.4;
+  // 소스가 정사각이 아니어도 중앙 정사각 크롭으로 왜곡 없이 그린다.
+  const side = Math.min(img.naturalWidth, img.naturalHeight);
+  const sx = (img.naturalWidth - side) / 2;
+  const sy = (img.naturalHeight - side) / 2;
   ctx.save();
-  ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+  ctx.drawImage(img, sx, sy, side, side, cx - size / 2, cy - size / 2, size, size);
   ctx.restore();
 }
 
