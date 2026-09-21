@@ -53,3 +53,18 @@ describe('FruitNinja', () => {
     expect(g.fruits.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('FruitNinja spawn spread', () => {
+  it('cycles left, center, right zones in order', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const g = new FruitNinja();
+    g.start();
+    g.spawn();
+    g.spawn();
+    g.spawn();
+    const xs = g.fruits.map((f) => f.x);
+    expect(xs[0]).toBeCloseTo(640 / 6, 0);
+    expect(xs[1]).toBeCloseTo(320, 0);
+    expect(xs[2]).toBeCloseTo((640 * 5) / 6, 0);
+  });
+});

@@ -14,6 +14,7 @@ export class FruitNinja implements Game {
   slices = 0;
   private running = false;
   private spawnMs = 0;
+  private spawnCount = 0;
 
   start(): void {
     this.running = true;
@@ -21,6 +22,7 @@ export class FruitNinja implements Game {
     this.fruits = [];
     this.spawnMs = 0;
     this.slices = 0;
+    this.spawnCount = 0;
   }
   stop(): void {
     this.running = false;
@@ -53,9 +55,15 @@ export class FruitNinja implements Game {
   }
   spawn(): void {
     const kind = Math.random() < 0.2 ? 'bomb' : 'fruit';
+    // 좌우 편중 방지: 왼쪽·가운데·오른쪽 구역을 차례로 순환하고
+    // 구역 안에서만 jitter를 준다. 연속 스폰이 한쪽에 몰리지 않는다.
+    const zone = this.spawnCount % 3;
+    this.spawnCount += 1;
+    const center = 640 * (zone * 2 + 1) / 6;
+    const x = Math.min(600, Math.max(40, center + (Math.random() - 0.5) * 140));
     // 위에서 떨어지기: 화면 위(y=-20) 스폰 후 낙하. 빠른 상승 대신
     // 빠른 낙하 + 강한 중력으로 박진감 있게 빽빽히 떨어진다.
-    this.fruits.push({ x: 60 + Math.random() * 520, y: -20, vx: (Math.random() - 0.5) * 120, vy: 120 + Math.random() * 140, kind, alive: true });
+    this.fruits.push({ x, y: -20, vx: (Math.random() - 0.5) * 120, vy: 120 + Math.random() * 140, kind, alive: true });
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
