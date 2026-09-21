@@ -11,7 +11,8 @@ import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
 import { GameLoop } from './game/loop';
 import { beep } from './ui/feedback';
-import { saveScore, shareLink, topScores } from './game/storage';
+import { saveScore, shareLink } from './game/storage';
+import { adminDotHTML, boardHTML, refreshBoard, wireAdminDot } from './ui/leaderboard';
 import type { ScoreBoard } from './game/engine';
 import { renderLanding } from './ui/landing';
 import updateLogRaw from '../docs/UPDATELOG.md?raw';
@@ -71,7 +72,7 @@ export function boot(): void {
   let current: { id: PlayableId; board: ScoreBoard } | null = null;
   let lastCombo = 0;
   const render = () => {
-    if (current && current.board.score > 0) saveScore(current.id, { name: '나', score: current.board.score });
+    // 라우트 이동 시 자동 저장하지 않는다: 이름 등록 폼에서 명시적으로 저장한다.
     current = null;
     lastCombo = 0;
     const oldVideo = document.getElementById('cam') as HTMLVideoElement | null;
@@ -111,13 +112,16 @@ export function boot(): void {
       `<div id="calib" class="overlay"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
       `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
       `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
-      `<p class="shareline">공유: <span id="share"></span></p><ol id="ranks" class="ranks"></ol>` +
+      `<p class="shareline">공유: <span id="share"></span></p><div id="ranks">${''}</div>` +
       `<div id="result" class="overlay" hidden></div>` +
       `<p class="helprow"><button type="button" id="howto" class="btn-small">게임 방법</button> ` +
-      `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>` +
+      `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button> ` +
+      `${adminDotHTML()}</p>` +
       `</main></div></div>`;
     wireUpdateLog(app);
     wireHowTo(app, id);
+    wireAdminDot(app, () => refreshBoard(app, id));
+    refreshBoard(app, id);
     void start(id);
   };
   // Device labels need HTML-escaping (browser-provided strings).
@@ -217,8 +221,7 @@ export function boot(): void {
     const share = document.getElementById('share');
     if (share) share.textContent = shareLink(id);
     const showRanks = () => {
-      const ol = document.getElementById('ranks');
-      if (ol) ol.innerHTML = topScores(id).map((s) => `<li>${s.name}: ${s.score}</li>`).join('');
+      refreshBoard(app, id);
     };
     showRanks();
     loop = new GameLoop({
@@ -232,20 +235,49 @@ export function boot(): void {
       face: loadFaceMask(id),
       timeLimitSec: 60,
       onTimeUp: (board) => {
-        if (board.score > 0) saveScore(id, { name: '나', score: board.score });
         showRanks();
         const result = document.getElementById('result');
-        if (result) {
+        if (!result) return;
+        if (board.score <= 0) {
           result.innerHTML =
-            `<p id="calibmsg">60초 챌린지 종료! ${board.score}점</p>` +
+            `<p>60초 챌린지 종료! 점수를 얻지 못했어요.</p>` +
             `<button type="button" id="again" class="btn">다시 도전</button>`;
-          result.hidden = false;
+        } else {
+          // 이름 등록 폼: 빈 이름은 등록 불가 (색이 아닌 문구로 안내, WCAG 3.3.1).
+          result.innerHTML =
+            `<p>60초 챌린지 종료! ${board.score}점</p>` +
+            `<form id="regform"><p><label for="regname">리더보드에 올릴 이름</label></p>` +
+            `<p><input id="regname" name="regname" maxlength="12" autocomplete="off" aria-describedby="reg-err"> ` +
+            `<button type="submit" class="btn">등록</button></p>` +
+            `<p id="reg-err" class="form-err"></p></form>` +
+            `<button type="button" id="again" class="btn">다시 도전</button>`;
+          result.querySelector('#regform')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = result.querySelector('#regname') as HTMLInputElement | null;
+            const err = result.querySelector('#reg-err');
+            const name = (input?.value ?? '').trim();
+            if (name.length === 0) {
+              if (err) err.textContent = '이름을 한 글자 이상 입력하세요.';
+              input?.focus();
+              return;
+            }
+            saveScore(id, { name: name.slice(0, 12), score: board.score });
+            showRanks();
+            result.innerHTML =
+              `<p>${esc(name)}님, 리더보드에 등록됐어요!</p>` +
+              `<button type="button" id="again" class="btn">다시 도전</button>`;
+            wireAgain();
+          });
+        }
+        const wireAgain = () => {
           result.querySelector('#again')?.addEventListener('click', () => {
             result.hidden = true;
             void start(id);
           });
           (result.querySelector('#again') as HTMLElement | null)?.focus?.();
-        }
+        };
+        wireAgain();
+        result.hidden = false;
         if (hud) hud.textContent = `60초 챌린지 종료! ${board.score}점`;
         beep('win');
       },

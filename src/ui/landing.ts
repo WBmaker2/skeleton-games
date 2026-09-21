@@ -2,6 +2,7 @@ import './theme.css';
 import './landing.css';
 import updateLogRaw from '../../docs/UPDATELOG.md?raw';
 import { openModal, parseUpdateLog, updateLogHTML } from './modal';
+import { adminDotHTML, wireAdminDot } from './leaderboard';
 
 export interface LandingGame {
   id: 'fruit' | 'squat' | 'math' | 'abc' | 'star' | 'balloon' | 'zombie' | 'dance' | 'simon' | 'yoga' | 'duo' | 'recycle';
@@ -182,10 +183,11 @@ export function renderLanding(app: HTMLElement): void {
     + LANDING_GAMES.map(card).join('')
     + `</ul></main>`
     + `<footer><p class="landing__foot">TIP: 카메라 앞에 서서 온몸으로 놀아보세요. 카메라는 게임 화면에서 바꿀 수 있어요. `
-    + `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button></p>`
+    + `<button type="button" id="updatelog" class="btn-small">업데이트 내역</button> ${adminDotHTML()}</p>`
     + `<p class="landing__readiness" id="readiness">인식 모델 확인 중…</p></footer>`
     + `</div></div>`;
   wireUpdateLog();
+  wireAdminDot(app, () => {});
   void refreshReadiness(app);
 }
 

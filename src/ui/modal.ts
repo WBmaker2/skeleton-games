@@ -22,7 +22,7 @@ export function parseUpdateLog(md: string): UpdateEntry[] {
   return entries.filter((e) => e.items.length > 0);
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
