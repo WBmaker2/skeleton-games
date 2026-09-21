@@ -76,14 +76,19 @@ export function drawLabel(
   size = 28
 ): void {
   ctx.save();
+  // 스테이지 캔버스는 셀카 미러(CSS scaleX(-1))로 표시되므로,
+  // 글자를 미리 좌우반전해 그려야 사용자에게 정상으로 보인다.
+  // 글자 중심 기준 반전이라 위치·레이아웃은 그대로 유지된다.
+  ctx.translate(x, y);
+  ctx.scale(-1, 1);
   ctx.font = `bold ${size}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineWidth = 5;
   ctx.strokeStyle = 'rgba(10, 16, 22, 0.85)';
-  ctx.strokeText(text, x, y);
+  ctx.strokeText(text, 0, 0);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(text, x, y);
+  ctx.fillText(text, 0, 0);
   ctx.restore();
 }
 

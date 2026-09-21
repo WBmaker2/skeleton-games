@@ -46,6 +46,31 @@ describe('game draw methods', () => {
   });
 });
 
+describe('mirrored stage text', () => {
+  it('drawLabel pre-flips text to cancel the CSS selfie mirror', async () => {
+    const { drawLabel } = await import('../src/ui/renderer');
+    const calls: Array<{ m: string; a: unknown[] }> = [];
+    const ctx = {
+      save: () => calls.push({ m: 'save', a: [] }),
+      restore: () => calls.push({ m: 'restore', a: [] }),
+      translate: (...a: unknown[]) => calls.push({ m: 'translate', a }),
+      scale: (...a: unknown[]) => calls.push({ m: 'scale', a }),
+      strokeText: (...a: unknown[]) => calls.push({ m: 'strokeText', a }),
+      fillText: (...a: unknown[]) => calls.push({ m: 'fillText', a }),
+    } as unknown as CanvasRenderingContext2D;
+    drawLabel(ctx, '7+8=?', 320, 52, 36);
+    // 글자 중심으로 이동 → 좌우반전 → 원점에 그리기 → 복원 순서여야
+    // CSS scaleX(-1)와 상쇄되어 사용자에게 정상으로 보인다.
+    expect(calls.map((c) => c.m)).toEqual([
+      'save', 'translate', 'scale', 'strokeText', 'fillText', 'restore'
+    ]);
+    expect(calls[1].a).toEqual([320, 52]);
+    expect(calls[2].a).toEqual([-1, 1]);
+    expect(calls[3].a).toEqual(['7+8=?', 0, 0]);
+    expect(calls[4].a).toEqual(['7+8=?', 0, 0]);
+  });
+});
+
 describe('celebration particles', () => {
   it('spawns and fades bursts', () => {
     const ps: Particle[] = [];
