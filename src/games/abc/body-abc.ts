@@ -2,7 +2,7 @@
 import type { PoseFrame, PoseMode } from '../../pose/types';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
-import { drawBar, drawLabel } from '../../ui/renderer';
+import { drawBar, drawLabel, drawPoseGuide } from '../../ui/renderer';
 
 export type Angles = Record<string, number>;
 
@@ -40,6 +40,8 @@ export class BodyABC implements Game {
   id = 'abc';
   board = new ScoreBoard();
   mode: PoseMode = 'standing';
+  // 상단에 문제 텍스트(목표 글자+가이드)가 나오므로 얼굴 마스크를 그리지 않는다 (시인성).
+  hideFace = true;
   target: 'T' | 'Y' | 'O' | 'L' = 'T';
   holdMs = 0;
   private running = false;
@@ -59,6 +61,12 @@ export class BodyABC implements Game {
   draw(ctx: CanvasRenderingContext2D, width: number, _height: number): void {
     drawLabel(ctx, this.target, width / 2, 78, 88);
     drawBar(ctx, width / 2 - 130, 136, 260, 14, this.holdMs / 1000, '#dfff00');
+    // 목표 스켈레톤 예시: 오른쪽 위 패널에 막대인간 가이드를 함께 보여준다.
+    // 글자만으로는 모양을 알기 어려우니, 코드로 그리는 벡터 가이드로 보완한다.
+    const gw = 140;
+    const gh = 180;
+    const gx = Math.max(8, width - gw - 16);
+    drawPoseGuide(ctx, this.target, gx, 16, gw, gh);
   }
   tickAngles(current: Angles, dtMs: number): GameEvent[] {
     if (!this.running) return [];

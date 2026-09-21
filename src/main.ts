@@ -4,7 +4,6 @@ import { createGame, defaultCalibration, loadEngine } from './ui/app';
 import type { PlayableId } from './ui/app';
 import { FruitNinja } from './games/fruit';
 import { BodyABC } from './games/abc';
-import { MathJump } from './games/math';
 import type { PoseEngine } from './pose/pose-engine';
 import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
@@ -246,7 +245,8 @@ export function boot(): void {
       calibration: cal,
       showSkeleton: true,
       // 게임 캐릭터 마스크 (파일이 없거나 hideFace 게임이면 스킵).
-      face: game instanceof MathJump ? null : loadFaceMask(id),
+      // MathJump·BodyABC처럼 상단 텍스트가 있는 게임은 마스크를 로드하지 않는다.
+      face: (game as { hideFace?: boolean }).hideFace ? null : loadFaceMask(id),
       timeLimitSec: 60,
       onTimeUp: (board) => {
         showRanks();

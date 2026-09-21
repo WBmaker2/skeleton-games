@@ -92,6 +92,119 @@ export function drawLabel(
   ctx.restore();
 }
 
+export type PoseGuideTarget = 'T' | 'Y' | 'O' | 'L';
+
+// 목표 알파벳 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
+// 외부 이미지 없이 코드로 그려지므로 에셋이 없어도 항상 보인다.
+// 스테이지는 셀카 미러(CSS scaleX(-1))이므로, 막대인간 좌우가 뒤집혀
+// 보이지 않도록 패널 중심 기준으로 한 번 더 뒤집어 그린다 (L 같은 비대칭 대비).
+// drawLabel은 자체적으로 뒤집기를 하므로 패널 안 글자는 그대로 호출한다.
+export function drawPoseGuide(
+  ctx: CanvasRenderingContext2D,
+  target: PoseGuideTarget,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): void {
+  ctx.save();
+  ctx.fillStyle = 'rgba(10, 16, 22, 0.72)';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  const rr = (ctx as unknown as { roundRect?: (...a: number[]) => void }).roundRect;
+  if (typeof rr === 'function') rr.call(ctx, x, y, w, h, 14);
+  else ctx.rect(x, y, w, h);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // 막대인간 영역: 위쪽 설명 여백·아래쪽 글자 여백을 제외한 안쪽 박스.
+  const padX = 12;
+  const top = y + 12;
+  const bottom = y + h - 40;
+  const px = (fx: number): number => x + padX + fx * (w - padX * 2);
+  const py = (fy: number): number => top + fy * Math.max(1, bottom - top);
+
+  const head = { x: 0.5, y: 0.1 };
+  const neck = { x: 0.5, y: 0.28 };
+  const hip = { x: 0.5, y: 0.6 };
+  const kneeL = { x: 0.42, y: 0.79 };
+  const kneeR = { x: 0.58, y: 0.79 };
+  const footL = { x: 0.36, y: 0.96 };
+  const footR = { x: 0.64, y: 0.96 };
+  const shoulderL = { x: 0.42, y: 0.33 };
+  const shoulderR = { x: 0.58, y: 0.33 };
+  const arms: Record<PoseGuideTarget, { elbowL: { x: number; y: number }; handL: { x: number; y: number }; elbowR: { x: number; y: number }; handR: { x: number; y: number } }> = {
+    // T: 양팔 수평으로 쭉 뻗기
+    T: {
+      elbowL: { x: 0.24, y: 0.33 },
+      handL: { x: 0.06, y: 0.33 },
+      elbowR: { x: 0.76, y: 0.33 },
+      handR: { x: 0.94, y: 0.33 }
+    },
+    // Y: 양팔 대각선 위로 벌리기
+    Y: {
+      elbowL: { x: 0.32, y: 0.18 },
+      handL: { x: 0.18, y: 0.02 },
+      elbowR: { x: 0.68, y: 0.18 },
+      handR: { x: 0.82, y: 0.02 }
+    },
+    // O: 양손을 머리 위에서 모아 동그라미 만들기
+    O: {
+      elbowL: { x: 0.26, y: 0.16 },
+      handL: { x: 0.5, y: 0.0 },
+      elbowR: { x: 0.74, y: 0.16 },
+      handR: { x: 0.5, y: 0.0 }
+    },
+    // L: 왼팔은 수평, 오른팔은 몸통 옆으로 내리기
+    L: {
+      elbowL: { x: 0.24, y: 0.33 },
+      handL: { x: 0.06, y: 0.33 },
+      elbowR: { x: 0.6, y: 0.46 },
+      handR: { x: 0.62, y: 0.6 }
+    }
+  };
+  const arm = arms[target];
+
+  ctx.save();
+  // 셀카 미러 상쇄: 패널 중심 기준 좌우반전.
+  const cx = x + w / 2;
+  ctx.translate(cx, 0);
+  ctx.scale(-1, 1);
+  ctx.translate(-cx, 0);
+  ctx.strokeStyle = '#dfff00';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const seg = (ax: number, ay: number, bx: number, by: number): void => {
+    ctx.beginPath();
+    ctx.moveTo(px(ax), py(ay));
+    ctx.lineTo(px(bx), py(by));
+    ctx.stroke();
+  };
+  // 몸통·다리 (전 포즈 공통)
+  seg(neck.x, neck.y, hip.x, hip.y);
+  seg(hip.x, hip.y, kneeL.x, kneeL.y);
+  seg(kneeL.x, kneeL.y, footL.x, footL.y);
+  seg(hip.x, hip.y, kneeR.x, kneeR.y);
+  seg(kneeR.x, kneeR.y, footR.x, footR.y);
+  // 팔 (포즈별)
+  seg(shoulderL.x, shoulderL.y, arm.elbowL.x, arm.elbowL.y);
+  seg(arm.elbowL.x, arm.elbowL.y, arm.handL.x, arm.handL.y);
+  seg(shoulderR.x, shoulderR.y, arm.elbowR.x, arm.elbowR.y);
+  seg(arm.elbowR.x, arm.elbowR.y, arm.handR.x, arm.handR.y);
+  // 머리
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(px(head.x), py(head.y), Math.min(w, h) * 0.09, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 패널 하단 목표 글자 (drawLabel이 미러를 자체 보정).
+  drawLabel(ctx, target, x + w / 2, y + h - 20, 26);
+}
+
 // 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 크기.
 // 이미지가 없거나 아직 로드 전이면 조용히 건너뛴다.
 export function drawFaceMask(

@@ -94,6 +94,43 @@ describe('celebration particles', () => {
   });
 });
 
+describe('ABC pose guide', () => {
+  it.each(['T', 'Y', 'O', 'L'] as const)('%s guide draws panel, stick figure and label', async (target) => {
+    const { drawPoseGuide } = await import('../src/ui/renderer');
+    const calls: Array<{ m: string; a: unknown[] }> = [];
+    const fn = (..._args: unknown[]): undefined => undefined;
+    const ctx = new Proxy({}, {
+      get: (_t, p) => {
+        if (p === 'scale') return (...a: unknown[]): undefined => {
+          calls.push({ m: 'scale', a });
+          return undefined;
+        };
+        if (p === 'arc') return (...a: unknown[]): undefined => {
+          calls.push({ m: 'arc', a });
+          return undefined;
+        };
+        if (p === 'fillText') return (...a: unknown[]): undefined => {
+          calls.push({ m: 'fillText', a });
+          return undefined;
+        };
+        if (p === 'strokeText') return (...a: unknown[]): undefined => {
+          calls.push({ m: 'strokeText', a });
+          return undefined;
+        };
+        return fn;
+      },
+      set: () => true
+    }) as unknown as CanvasRenderingContext2D;
+    expect(() => drawPoseGuide(ctx, target, 484, 16, 140, 180)).not.toThrow();
+    // 셀카 미러 상쇄용 좌우반전이 1회 포함되어야 함 (L 비대칭 대비)
+    expect(calls.some((c) => c.m === 'scale' && c.a[0] === -1 && c.a[1] === 1)).toBe(true);
+    // 막대인간 머리
+    expect(calls.some((c) => c.m === 'arc')).toBe(true);
+    // 패널 하단 목표 글자
+    expect(calls.some((c) => (c.m === 'fillText' || c.m === 'strokeText') && c.a[0] === target)).toBe(true);
+  });
+});
+
 describe('face mask overlay', () => {
   it('skips missing or unloaded images', async () => {
     const { drawFaceMask } = await import('../src/ui/renderer');
