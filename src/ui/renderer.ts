@@ -147,15 +147,15 @@ export function drawSkeleton(canvas: HTMLCanvasElement, frame: PoseFrame): void 
     ctx.save();
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = '#22303c';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(w.x, w.y, 11, 0, Math.PI * 2);
+    ctx.arc(w.x, w.y, 13, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.strokeStyle = '#dfff00';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(w.x, w.y, 16, 0, Math.PI * 2);
+    ctx.arc(w.x, w.y, 19, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }

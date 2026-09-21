@@ -33,20 +33,20 @@ export class MathJump implements Game {
     this.running = false;
   }
   draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    drawLabel(ctx, this.quiz.q, width / 2, 48, 30);
+    drawLabel(ctx, this.quiz.q, width / 2, 52, 36);
     const labels = [String(this.quiz.choices[0]), String(this.quiz.choices[1]), String(this.quiz.choices[2])];
     for (let i = 0; i < 3; i++) {
       const cx = (width * (i * 2 + 1)) / 6;
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.roundRect(cx - 70, height - 150, 140, 90, 14);
+      ctx.roundRect(cx - 85, height - 180, 170, 110, 16);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
-      drawLabel(ctx, labels[i], cx, height - 105, 34);
+      drawLabel(ctx, labels[i], cx, height - 125, 42);
     }
   }
   nextQuiz(): void {

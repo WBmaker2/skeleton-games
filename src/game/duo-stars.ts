@@ -33,8 +33,8 @@ export class DuoStars implements Game {
     ctx.lineTo(this.starB.x, this.starB.y);
     ctx.stroke();
     ctx.restore();
-    drawStar(ctx, this.starA.x, this.starA.y, 24, '#dfff00');
-    drawStar(ctx, this.starB.x, this.starB.y, 24, '#dfff00');
+    drawStar(ctx, this.starA.x, this.starA.y, 32, '#dfff00');
+    drawStar(ctx, this.starB.x, this.starB.y, 32, '#dfff00');
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];

@@ -36,17 +36,17 @@ export class ZombieSteps implements Game {
       ctx.save();
       ctx.fillStyle = '#3d9e57';
       ctx.beginPath();
-      ctx.roundRect(cx - 28, gh.y - 20, 56, 64, 12);
+      ctx.roundRect(cx - 36, gh.y - 26, 72, 80, 14);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(cx - 12, gh.y + 2, 6, 0, Math.PI * 2);
-      ctx.arc(cx + 12, gh.y + 2, 6, 0, Math.PI * 2);
+      ctx.arc(cx - 15, gh.y + 2, 8, 0, Math.PI * 2);
+      ctx.arc(cx + 15, gh.y + 2, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#22303c';
       ctx.beginPath();
-      ctx.arc(cx - 12, gh.y + 3, 2.5, 0, Math.PI * 2);
-      ctx.arc(cx + 12, gh.y + 3, 2.5, 0, Math.PI * 2);
+      ctx.arc(cx - 15, gh.y + 3, 3, 0, Math.PI * 2);
+      ctx.arc(cx + 15, gh.y + 3, 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }

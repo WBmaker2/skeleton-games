@@ -57,8 +57,8 @@ export class BodyABC implements Game {
     this.running = false;
   }
   draw(ctx: CanvasRenderingContext2D, width: number, _height: number): void {
-    drawLabel(ctx, this.target, width / 2, 70, 72);
-    drawBar(ctx, width / 2 - 110, 120, 220, 12, this.holdMs / 1000, '#dfff00');
+    drawLabel(ctx, this.target, width / 2, 78, 88);
+    drawBar(ctx, width / 2 - 130, 136, 260, 14, this.holdMs / 1000, '#dfff00');
   }
   tickAngles(current: Angles, dtMs: number): GameEvent[] {
     if (!this.running) return [];

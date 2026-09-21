@@ -32,8 +32,8 @@ export class SquatRunner implements Game {
     this.running = false;
   }
   draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    drawLabel(ctx, this.isDown ? '일어서세요!' : '앉으세요!', width / 2, 70, 34);
-    drawLabel(ctx, `${this.reps}회`, width / 2, 115, 24);
+    drawLabel(ctx, this.isDown ? '일어서세요!' : '앉으세요!', width / 2, 78, 40);
+    drawLabel(ctx, `${this.reps}회`, width / 2, 128, 28);
   }
   tick(frame: PoseFrame, _dtMs: number): GameEvent[] {
     if (!this.running) return [];

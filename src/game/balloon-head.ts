@@ -32,14 +32,14 @@ export class BalloonHead implements Game {
     const b = this.balloon;
     ctx.save();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(b.x, b.y + 34);
-    ctx.lineTo(b.x, b.y + 70);
+    ctx.moveTo(b.x, b.y + 42);
+    ctx.lineTo(b.x, b.y + 88);
     ctx.stroke();
     ctx.fillStyle = '#ff71ce';
     ctx.beginPath();
-    ctx.ellipse(b.x, b.y, 30, 36, 0, 0, Math.PI * 2);
+    ctx.ellipse(b.x, b.y, 38, 45, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     drawLabel(ctx, `${this.hits}번`, width - 70, 50, 30);

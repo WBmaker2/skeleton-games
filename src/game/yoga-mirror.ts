@@ -36,8 +36,8 @@ export class YogaMirror implements Game {
     this.running = false;
   }
   draw(ctx: CanvasRenderingContext2D, width: number): void {
-    drawLabel(ctx, `${this.pose.name} 자세`, width / 2, 60, 36);
-    drawBar(ctx, width / 2 - 110, 100, 220, 12, this.progress, '#3d9e57');
+    drawLabel(ctx, `${this.pose.name} 자세`, width / 2, 66, 44);
+    drawBar(ctx, width / 2 - 130, 110, 260, 14, this.progress, '#3d9e57');
   }
   get progress(): number {
     return Math.min(1, this.holdMs / 3000);
