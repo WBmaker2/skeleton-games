@@ -80,6 +80,9 @@ export class MathJump implements Game {
   private dwellMs = 0;
   private lastZone: 0 | 1 | 2 | null = null;
   private elapsedMs = 0;
+  // 양손 제출이 발동하려면 새 문제 후 한 번은 양손이 내려가 있어야 한다.
+  // (이전 문제에서 든 손이 그대로 다음 문제를 넘겨버리는 것 방지)
+  private handsDownSeen = false;
 
   get isThinking(): boolean {
     return this.elapsedMs < MATH_THINK_MS;
@@ -100,6 +103,7 @@ export class MathJump implements Game {
     this.dwellMs = 0;
     this.elapsedMs = 0;
     this.lastZone = null;
+    this.handsDownSeen = false;
   }
   stop(): void {
     this.running = false;
@@ -134,6 +138,19 @@ export class MathJump implements Game {
     this.dwellMs = 0;
     this.lastZone = null;
     this.elapsedMs = 0;
+    this.handsDownSeen = false;
+  }
+  private judge(zone: 0 | 1 | 2): GameEvent[] {
+    const correct = zone === this.quiz.answerIndex;
+    const q = this.quiz.q;
+    this.nextQuiz();
+    if (correct) {
+      this.board.comboHit();
+      this.board.add(20);
+      return [{ type: 'correct', points: 20, label: `${q} 정답!` }];
+    }
+    this.board.comboMiss();
+    return [{ type: 'wrong', points: 0, label: `${q} 다시 도전!` }];
   }
   zoneOf(x: number, width: number): 0 | 1 | 2 {
     if (x < width / 3) return 0;
@@ -143,12 +160,6 @@ export class MathJump implements Game {
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
     this.elapsedMs += dtMs;
-    // 생각 시간에는 문제를 읽고 이동할 여유를 준다: 답 확정 없음.
-    if (this.isThinking) {
-      this.dwellMs = 0;
-      this.lastZone = null;
-      return [];
-    }
     const cx = bodyCenterX(frame);
     const zone = this.zoneOf(cx, frame.width);
     const gateNames = ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip', 'left_wrist', 'right_wrist'];
@@ -161,7 +172,22 @@ export class MathJump implements Game {
     const ls = getByName(frame, 'left_shoulder');
     const rw = getByName(frame, 'right_wrist');
     const rs = getByName(frame, 'right_shoulder');
-    const handUp = [lw && ls ? lw.y < ls.y - 20 : false, rw && rs ? rw.y < rs.y - 20 : false].some(Boolean);
+    const leftUp = lw && ls ? lw.y < ls.y - 20 : false;
+    const rightUp = rw && rs ? rw.y < rs.y - 20 : false;
+    // 양손 제출: 생각 시간이 끝나기 전이라도, 자리 이동 후 양손을 어깨 위로
+    // 올리면 그 순간 바로 판정한다. 새 문제마다 손을 한 번 내려야 발동한다.
+    if (!leftUp || !rightUp) this.handsDownSeen = true;
+    if (leftUp && rightUp && this.handsDownSeen) {
+      this.handsDownSeen = false;
+      return this.judge(zone);
+    }
+    // 생각 시간에는 양손 제출 외에는 답을 확정하지 않는다.
+    if (this.isThinking) {
+      this.dwellMs = 0;
+      this.lastZone = null;
+      return [];
+    }
+    const handUp = [leftUp, rightUp].some(Boolean);
     if (zone === this.lastZone) {
       this.dwellMs += dtMs;
     } else {
@@ -170,15 +196,6 @@ export class MathJump implements Game {
     }
     const confirmed = this.dwellMs > MATH_DWELL_MS || (handUp && this.dwellMs > MATH_HAND_UP_DWELL_MS);
     if (!confirmed) return [];
-    const correct = zone === this.quiz.answerIndex;
-    const q = this.quiz.q;
-    this.nextQuiz();
-    if (correct) {
-      this.board.comboHit();
-      this.board.add(20);
-      return [{ type: 'correct', points: 20, label: `${q} 정답!` }];
-    }
-    this.board.comboMiss();
-    return [{ type: 'wrong', points: 0, label: `${q} 다시 도전!` }];
+    return this.judge(zone);
   }
 }

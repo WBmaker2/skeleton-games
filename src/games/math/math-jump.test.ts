@@ -11,7 +11,7 @@ function answerOf(quiz: Quiz): number {
   return m[2] === '+' ? a + b : m[2] === '-' ? a - b : a * b;
 }
 
-function centerFrame(x: number): PoseFrame {
+function centerFrame(x: number, wristY = 90): PoseFrame {
   return {
     width: 640, height: 480, timestamp: 0,
     keypoints: [
@@ -19,10 +19,17 @@ function centerFrame(x: number): PoseFrame {
       { name: 'right_shoulder', x: x + 50, y: 100, score: 1 },
       { name: 'left_hip', x: x - 40, y: 200, score: 1 },
       { name: 'right_hip', x: x + 40, y: 200, score: 1 },
-      { name: 'left_wrist', x, y: 90, score: 1 },
-      { name: 'right_wrist', x, y: 90, score: 1 }
+      { name: 'left_wrist', x, y: wristY, score: 1 },
+      { name: 'right_wrist', x, y: wristY, score: 1 }
     ]
   };
+}
+
+function oneHandFrame(x: number): PoseFrame {
+  const f = centerFrame(x, 150);
+  const lw = f.keypoints.find((k) => k.name === 'left_wrist');
+  if (lw) lw.y = 60;
+  return f;
 }
 
 describe('MathJump', () => {
@@ -57,6 +64,48 @@ describe('MathJump', () => {
   });
   it('hides face mask for readability of the top quiz text', () => {
     expect(new MathJump().hideFace).toBe(true);
+  });
+  it('judges instantly on both hands up even during think time', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    expect(g.isThinking).toBe(true);
+    // 생각 시간이 끝나기 전이라도 정답 자리에서 양손을 올리면 즉시 정답
+    g.tick(centerFrame(550), 16);
+    const events = g.tick(centerFrame(550, 60), 16);
+    expect(events.some((e) => e.type === 'correct')).toBe(true);
+    // 새 문제의 생각 시간이 다시 시작됨
+    expect(g.isThinking).toBe(true);
+  });
+  it('judges wrong zone instantly on both hands up', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    g.tick(centerFrame(100), 16);
+    const events = g.tick(centerFrame(100, 60), 16);
+    expect(events.some((e) => e.type === 'wrong')).toBe(true);
+  });
+  it('held-up hands do not chain-trigger next questions', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    g.tick(centerFrame(550), 16);
+    expect(g.tick(centerFrame(550, 60), 16).length).toBeGreaterThan(0);
+    // 손을 든 채로 있으면 다음 문제가 저절로 넘어가지 않음
+    const chained: string[] = [];
+    for (let i = 0; i < 100; i++) chained.push(...g.tick(centerFrame(550, 60), 16).map((e) => e.type));
+    expect(chained.length).toBe(0);
+    // 손을 내렸다 다시 들어야 발동
+    g.tick(centerFrame(550, 150), 16);
+    expect(g.tick(centerFrame(550, 60), 16).length).toBeGreaterThan(0);
+  });
+  it('one hand up during think time does not confirm', () => {
+    const g = new MathJump();
+    g.start();
+    g.quiz = { q: '7+8=?', choices: [12, 15, 16], answerIndex: 2 };
+    const events: string[] = [];
+    for (let i = 0; i < 40; i++) events.push(...g.tick(oneHandFrame(550), 16).map((e) => e.type));
+    expect(events.length).toBe(0);
   });
   it('draws the quiz text 3x large (108px)', () => {
     const fonts: string[] = [];
