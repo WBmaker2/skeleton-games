@@ -13,6 +13,9 @@ export interface Angles {
   // 어깨너비 배수로 정규화한 거리. 미측정(가림·화면 밖)이면 없음.
   handSpread?: number;
   legSpread?: number;
+  // 손이 자기 어깨 반대편(몸 반대쪽)에 있으면 true. K의 가로지른 팔 판정용.
+  leftHandCrossed?: boolean;
+  rightHandCrossed?: boolean;
 }
 
 // 목표 팔 각도 (연속값, 단위: °).
@@ -25,18 +28,17 @@ export const TEMPLATES: Record<AbcTarget, Angles> = {
   O: { leftArm: 160, rightArm: 160, torso: 90 },
   L: { leftArm: 90, rightArm: 0, torso: 90 },
   I: { leftArm: 0, rightArm: 0, torso: 90 },
-  // K: 한 팔은 대각선 위, 한 팔은 대각선 아래. 좌우 어느 쪽을 올려도 인정한다.
-  K: { leftArm: 150, rightArm: 20, torso: 90 },
+  // K: 한 팔은 대각선 위(150), 다른 팔은 몸 앞을 가로질러 반대쪽 아래(40).
+  // 두 대각선이 같은 쪽으로 모여야 실제 K처럼 보이므로, 내린 팔의 손이
+  // 몸 반대편까지 가로질러야 인정한다 (아래 K 판정 참고).
+  K: { leftArm: 150, rightArm: 40, torso: 90 },
   // X·A는 양팔 대각선 위라 팔 각도만으로는 Y·O와 겹친다. 손·다리 벌림으로 나눈다.
   X: { leftArm: 150, rightArm: 150, torso: 90 },
   A: { leftArm: 160, rightArm: 160, torso: 90 }
 };
 
-const K_MIRROR: Angles = {
-  ...TEMPLATES.K,
-  leftArm: TEMPLATES.K.rightArm,
-  rightArm: TEMPLATES.K.leftArm
-};
+// K 반대 버전: 오른팔을 위로, 왼팔을 가로질러 아래로.
+const K_UP_RIGHT: Angles = { leftArm: 40, rightArm: 150, torso: 90 };
 
 // 성공 판정 임계값: 양팔 평균 유사도 0.6 (양팔 합쳐 ±36°까지 허용, 예전 0.8보다 완화).
 // T·Y 교차 유사도는 0.5라서 구별은 유지된다.
@@ -111,6 +113,19 @@ export function anglesFromFrame(frame: PoseFrame): Angles {
   const leg = spread(by.get('left_ankle'), by.get('right_ankle'));
   if (hand !== undefined) angles.handSpread = hand;
   if (leg !== undefined) angles.legSpread = leg;
+  // 가로지른 손: 손목이 자기 어깨와 몸 중심선 반대편에 있으면 true.
+  // 좌우 기준을 하드코딩하지 않고 어깨 위치에서 상대적으로 구해
+  // 카메라 방향(원본/미러)에 상관없이 동작한다.
+  const mid = ls && rs ? (ls.x + rs.x) / 2 : undefined;
+  const crossed = (s?: Keypoint, w?: Keypoint): boolean | undefined => {
+    if (!s || !w || mid === undefined) return undefined;
+    if (s.score < SPREAD_MIN_SCORE || w.score < SPREAD_MIN_SCORE) return undefined;
+    return (w.x - mid) * (s.x - mid) < 0;
+  };
+  const leftCrossed = crossed(by.get('left_shoulder'), by.get('left_wrist'));
+  const rightCrossed = crossed(by.get('right_shoulder'), by.get('right_wrist'));
+  if (leftCrossed !== undefined) angles.leftHandCrossed = leftCrossed;
+  if (rightCrossed !== undefined) angles.rightHandCrossed = rightCrossed;
   return angles;
 }
 
@@ -159,10 +174,18 @@ export class BodyABC implements Game {
   }
   // 팔 유사도와 손·다리 벌림 조건을 모두 통과해야 그 글자로 인정한다.
   matches(current: Angles, target: AbcTarget): boolean {
-    const sim =
-      target === 'K'
-        ? Math.max(poseSimilarity(current, TEMPLATES.K), poseSimilarity(current, K_MIRROR))
-        : poseSimilarity(current, TEMPLATES[target]);
+    // K: 위로 든 팔 + 반대쪽으로 가로질러 내린 팔이 함께 있어야 실제 K 모양.
+    // 한 손만 올리고 다른 손을 그냥 내린 자세는 K로 인정하지 않는다.
+    if (target === 'K') {
+      const upLeft =
+        poseSimilarity(current, TEMPLATES.K) >= ABC_SIM_THRESHOLD &&
+        current.rightHandCrossed === true;
+      const upRight =
+        poseSimilarity(current, K_UP_RIGHT) >= ABC_SIM_THRESHOLD &&
+        current.leftHandCrossed === true;
+      return upLeft || upRight;
+    }
+    const sim = poseSimilarity(current, TEMPLATES[target]);
     if (sim < ABC_SIM_THRESHOLD) return false;
     const need = POSE_NEEDS[target];
     if (!need) return true;

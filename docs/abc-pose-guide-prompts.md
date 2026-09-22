@@ -59,11 +59,12 @@
 - standing straight and tall, both arms relaxed straight down along the body,
   feet together, calm confident posture, like a soldier standing at attention
 
-## 6. guide-abc-K.png — K자 (한 팔 위 + 한 팔 아래 대각선)
+## 6. guide-abc-K.png — K자 (한 팔 위 + 반대 팔 가로질러 아래)
 
-- one arm raised diagonally up-out to the sky, the other arm lowered
-  diagonally down-out, elbows straight, forming a capital K with the torso,
-  legs together (left or right side is fine, judge accepts both)
+- one arm raised diagonally up-out to the sky; the other arm crossing in front
+  of the torso diagonally down to the opposite side, hand ending beside the
+  opposite hip, forming a capital K silhouette with the torso, legs together
+  (left or right side is fine, judge accepts both)
 
 ## 7. guide-abc-X.png — X자 (점핑잭, 다리 벌림)
 
@@ -80,13 +81,15 @@
 ## 참고: 현재 코드 가이드와의 대응
 
 - `TEMPLATES` (`src/games/abc/body-abc.ts`): T(90,90), Y(135,135), O(160,160),
-  L(90,0), I(0,0), K(150,20), X(150,150), A(160,160)
+  L(90,0), I(0,0), K(150,40), X(150,150), A(160,160)
 - 팔 스케일: 0=팔 내림·90=수평·180=머리 위로 올림 (어깨→손목 벡터의 연속 각도),
   성공 임계값은 양팔 평균 유사도 0.6 (T·Y 교차 유사도 0.5라 구별됨)
 - 손·다리 벌림 조건: 어깨너비 배수 1.3 이상=벌림, 미만=모음
   - Y: 손 벌림 + 다리 모음 / O: 손 모음 + 다리 모음
   - X: 손 벌림 + 다리 벌림 / A: 손 모음 + 다리 벌림
-  - K는 좌우 어느 팔을 올려도 인정, X·A는 선 모드 전용 (앉으면 출제 안 됨)
+  - K: 위로 든 팔(150) + 반대쪽으로 가로지른 팔(40) — 내린 손이 몸 반대편에
+    있어야 인정 (한 손만 올린 자세는 K가 아님), 좌우 어느 쪽이든 가능
+  - X·A는 선 모드 전용 (앉으면 출제 안 됨)
 - `drawPoseGuide` 좌표와 위 프롬프트는 1:1 대응 (L·K 비대칭 포함)
 - L·K는 비대칭이라 셀카 미러 상쇄가 필요 — 이미지로 교체해도 좌우가 뒤집혀
   보이지 않는지 실기기로 확인할 것

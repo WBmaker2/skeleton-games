@@ -171,12 +171,12 @@ const GUIDE_LAYOUTS: Record<PoseGuideTarget, GuideLayout> = {
   },
   // I: 팔 내리고 차렷
   I: { ...ARMS_DOWN, ...LEGS_TOGETHER },
-  // K: 한 팔은 대각선 위, 한 팔은 대각선 아래 (좌우 어느 쪽이든 인정)
+  // K: 한 팔은 위로, 다른 팔은 몸 앞을 가로질러 반대쪽 아래로 (실제 K 실루엣)
   K: {
-    elbowL: { x: 0.3, y: 0.18 },
-    handL: { x: 0.16, y: 0.03 },
-    elbowR: { x: 0.6, y: 0.46 },
-    handR: { x: 0.62, y: 0.6 },
+    elbowL: { x: 0.28, y: 0.18 },
+    handL: { x: 0.12, y: 0.03 },
+    elbowR: { x: 0.46, y: 0.5 },
+    handR: { x: 0.3, y: 0.68 },
     ...LEGS_TOGETHER
   },
   // X: 양팔 대각선 위로 크게, 다리 벌려 점핑잭

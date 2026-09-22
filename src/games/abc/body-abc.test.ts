@@ -81,6 +81,24 @@ describe('anglesFromFrame', () => {
   it('leaves legSpread undefined when ankles are not visible', () => {
     expect(anglesFromFrame(frameOf([270, 120], [370, 120], [170, 120], [470, 120])).legSpread).toBeUndefined();
   });
+  it('marks a hand as crossed when it is on the opposite side of the body', () => {
+    // 실제 카메라처럼 왼쪽 어깨가 이미지 오른쪽(큰 x)에 오는 배치.
+    const f: PoseFrame = {
+      width: 640,
+      height: 480,
+      timestamp: 0,
+      keypoints: [
+        { name: 'left_shoulder', x: 370, y: 120, score: 1 },
+        { name: 'right_shoulder', x: 270, y: 120, score: 1 },
+        // 왼손이 몸 중심(320)을 넘어 반대편(작은 x)으로 가로지름
+        { name: 'left_wrist', x: 250, y: 220, score: 1 },
+        { name: 'right_wrist', x: 230, y: 220, score: 1 }
+      ]
+    };
+    const a = anglesFromFrame(f);
+    expect(a.leftHandCrossed).toBe(true);
+    expect(a.rightHandCrossed).toBe(false);
+  });
 });
 
 describe('BodyABC', () => {
@@ -168,7 +186,10 @@ describe('BodyABC', () => {
     g.start();
     const done: string[] = [];
     for (let i = 0; i < 2000 && done.length < 10; i++) {
-      for (const e of g.tickAngles({ ...TEMPLATES[g.target] }, 16)) {
+      const ideal: Angles = { ...TEMPLATES[g.target] };
+      // K는 위로 든 팔 + 반대쪽으로 가로지른 팔이 함께 있어야 인정된다.
+      if (g.target === 'K') ideal.rightHandCrossed = true;
+      for (const e of g.tickAngles(ideal, 16)) {
         if (e.type === 'pose-ok') done.push(e.label);
       }
     }
@@ -182,10 +203,10 @@ describe('BodyABC', () => {
     g.target = 'I';
     expect(holdAll(g, { ...TEMPLATES.I })).toContain('pose-ok');
   });
-  it('accepts K with either arm raised', () => {
+  it('accepts K with one arm up and the other crossed over', () => {
     const variants: Angles[] = [
-      { ...TEMPLATES.K },
-      { leftArm: 20, rightArm: 150, torso: 90 }
+      { leftArm: 150, rightArm: 40, torso: 90, rightHandCrossed: true },
+      { leftArm: 40, rightArm: 150, torso: 90, leftHandCrossed: true }
     ];
     for (const angles of variants) {
       const g = new BodyABC();
@@ -193,6 +214,13 @@ describe('BodyABC', () => {
       g.target = 'K';
       expect(holdAll(g, angles)).toContain('pose-ok');
     }
+  });
+  it('does not complete K with only one arm raised (no crossing)', () => {
+    const g = new BodyABC();
+    g.start();
+    g.target = 'K';
+    const hanging: Angles = { leftArm: 150, rightArm: 40, torso: 90, rightHandCrossed: false };
+    expect(holdAll(g, hanging)).not.toContain('pose-ok');
   });
   it('X requires spread legs (Y stance is not X)', () => {
     const g = new BodyABC();
