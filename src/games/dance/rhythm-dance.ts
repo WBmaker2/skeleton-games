@@ -2,7 +2,7 @@ import type { PoseFrame } from '../../pose/types';
 import { getByName } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
-import { drawBar, drawLabel } from '../../ui/renderer';
+import { drawBar, drawDanceGuide, drawLabel } from '../../ui/renderer';
 
 export type DanceMove = 'left' | 'right' | 'both' | 'down';
 
@@ -32,6 +32,8 @@ export function wristPattern(frame: PoseFrame): DanceMove {
 // 리듬 댄스 카피: 박자에 맞춰 포즈 따라하기. 4박자 순환.
 export class RhythmDance implements Game {
   id = 'dance';
+  // 상단에 목표 포즈(글자+스켈레톤 가이드)가 나오므로 얼굴 마스크를 그리지 않는다 (시인성).
+  hideFace = true;
   moves: DanceMove[] = ['left', 'right', 'both', 'down'];
   move: DanceMove = 'left';
   board = new ScoreBoard();
@@ -56,6 +58,12 @@ export class RhythmDance implements Game {
   draw(ctx: CanvasRenderingContext2D, width: number): void {
     drawLabel(ctx, MOVE_KR[this.move], width / 2, 78, 52);
     drawBar(ctx, width / 2 - 130, 122, 260, 14, 1 - this.beatFrac, '#00ffff');
+    // 따라할 동작 스켈레톤 예시: 오른쪽 위 패널에 막대인간 가이드를 함께 보여준다.
+    // 글자만으로는 팔 모양을 알기 어려우니, 코드로 그리는 벡터 가이드로 보완한다.
+    const gw = 140;
+    const gh = 180;
+    const gx = Math.max(8, width - gw - 16);
+    drawDanceGuide(ctx, this.move, gx, 16, gw, gh, MOVE_KR[this.move]);
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
