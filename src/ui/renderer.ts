@@ -99,12 +99,108 @@ export function drawLabel(
   ctx.restore();
 }
 
-export type PoseGuideTarget = 'T' | 'Y' | 'O' | 'L';
+export type PoseGuideTarget = 'T' | 'Y' | 'O' | 'L' | 'I' | 'K' | 'X' | 'A';
+
+interface Joint { x: number; y: number }
+
+interface GuideLayout {
+  elbowL: Joint;
+  handL: Joint;
+  elbowR: Joint;
+  handR: Joint;
+  kneeL: Joint;
+  kneeR: Joint;
+  footL: Joint;
+  footR: Joint;
+}
+
+// 다리 모양: 글자 모양에 맞춰 모은 다리(기둥)와 벌린 다리(X·A)를 쓴다.
+const LEGS_TOGETHER = {
+  kneeL: { x: 0.46, y: 0.79 },
+  kneeR: { x: 0.54, y: 0.79 },
+  footL: { x: 0.455, y: 0.96 },
+  footR: { x: 0.545, y: 0.96 }
+};
+const LEGS_OPEN = {
+  kneeL: { x: 0.28, y: 0.78 },
+  kneeR: { x: 0.72, y: 0.78 },
+  footL: { x: 0.16, y: 0.95 },
+  footR: { x: 0.84, y: 0.95 }
+};
+// 팔 내림(I): 몸통 옆으로 자연스럽게.
+const ARMS_DOWN = {
+  elbowL: { x: 0.41, y: 0.46 },
+  handL: { x: 0.39, y: 0.58 },
+  elbowR: { x: 0.59, y: 0.46 },
+  handR: { x: 0.61, y: 0.58 }
+};
+
+// 글자별 팔다리 배치. 손(맞대기/벌리기)과 다리(모음/벌림)가 판정 조건과 일치한다.
+const GUIDE_LAYOUTS: Record<PoseGuideTarget, GuideLayout> = {
+  // T: 양팔 수평으로 쭉 뻗기
+  T: {
+    elbowL: { x: 0.24, y: 0.33 },
+    handL: { x: 0.06, y: 0.33 },
+    elbowR: { x: 0.76, y: 0.33 },
+    handR: { x: 0.94, y: 0.33 },
+    ...LEGS_TOGETHER
+  },
+  // Y: 양팔 대각선 위로 넓게, 다리 모음
+  Y: {
+    elbowL: { x: 0.32, y: 0.18 },
+    handL: { x: 0.18, y: 0.02 },
+    elbowR: { x: 0.68, y: 0.18 },
+    handR: { x: 0.82, y: 0.02 },
+    ...LEGS_TOGETHER
+  },
+  // O: 양손을 머리 위에서 모아 동그라미, 다리 모음
+  O: {
+    elbowL: { x: 0.26, y: 0.16 },
+    handL: { x: 0.5, y: 0.0 },
+    elbowR: { x: 0.74, y: 0.16 },
+    handR: { x: 0.5, y: 0.0 },
+    ...LEGS_TOGETHER
+  },
+  // L: 왼팔은 수평, 오른팔은 몸통 옆으로 내리기
+  L: {
+    elbowL: { x: 0.24, y: 0.33 },
+    handL: { x: 0.06, y: 0.33 },
+    elbowR: { x: 0.6, y: 0.46 },
+    handR: { x: 0.62, y: 0.6 },
+    ...LEGS_TOGETHER
+  },
+  // I: 팔 내리고 차렷
+  I: { ...ARMS_DOWN, ...LEGS_TOGETHER },
+  // K: 한 팔은 대각선 위, 한 팔은 대각선 아래 (좌우 어느 쪽이든 인정)
+  K: {
+    elbowL: { x: 0.3, y: 0.18 },
+    handL: { x: 0.16, y: 0.03 },
+    elbowR: { x: 0.6, y: 0.46 },
+    handR: { x: 0.62, y: 0.6 },
+    ...LEGS_TOGETHER
+  },
+  // X: 양팔 대각선 위로 크게, 다리 벌려 점핑잭
+  X: {
+    elbowL: { x: 0.28, y: 0.22 },
+    handL: { x: 0.1, y: 0.06 },
+    elbowR: { x: 0.72, y: 0.22 },
+    handR: { x: 0.9, y: 0.06 },
+    ...LEGS_OPEN
+  },
+  // A: 양손을 머리 위에서 맞대 꼭짓점, 다리 벌려 삼각형
+  A: {
+    elbowL: { x: 0.36, y: 0.2 },
+    handL: { x: 0.5, y: 0.0 },
+    elbowR: { x: 0.64, y: 0.2 },
+    handR: { x: 0.5, y: 0.0 },
+    ...LEGS_OPEN
+  }
+};
 
 // 목표 알파벳 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
 // 외부 이미지 없이 코드로 그려지므로 에셋이 없어도 항상 보인다.
 // 스테이지는 셀카 미러(CSS scaleX(-1))이므로, 막대인간 좌우가 뒤집혀
-// 보이지 않도록 패널 중심 기준으로 한 번 더 뒤집어 그린다 (L 같은 비대칭 대비).
+// 보이지 않도록 패널 중심 기준으로 한 번 더 뒤집어 그린다 (L·K 같은 비대칭 대비).
 // drawLabel은 자체적으로 뒤집기를 하므로 패널 안 글자는 그대로 호출한다.
 export function drawPoseGuide(
   ctx: CanvasRenderingContext2D,
@@ -136,43 +232,9 @@ export function drawPoseGuide(
   const head = { x: 0.5, y: 0.1 };
   const neck = { x: 0.5, y: 0.28 };
   const hip = { x: 0.5, y: 0.6 };
-  const kneeL = { x: 0.42, y: 0.79 };
-  const kneeR = { x: 0.58, y: 0.79 };
-  const footL = { x: 0.36, y: 0.96 };
-  const footR = { x: 0.64, y: 0.96 };
   const shoulderL = { x: 0.42, y: 0.33 };
   const shoulderR = { x: 0.58, y: 0.33 };
-  const arms: Record<PoseGuideTarget, { elbowL: { x: number; y: number }; handL: { x: number; y: number }; elbowR: { x: number; y: number }; handR: { x: number; y: number } }> = {
-    // T: 양팔 수평으로 쭉 뻗기
-    T: {
-      elbowL: { x: 0.24, y: 0.33 },
-      handL: { x: 0.06, y: 0.33 },
-      elbowR: { x: 0.76, y: 0.33 },
-      handR: { x: 0.94, y: 0.33 }
-    },
-    // Y: 양팔 대각선 위로 벌리기
-    Y: {
-      elbowL: { x: 0.32, y: 0.18 },
-      handL: { x: 0.18, y: 0.02 },
-      elbowR: { x: 0.68, y: 0.18 },
-      handR: { x: 0.82, y: 0.02 }
-    },
-    // O: 양손을 머리 위에서 모아 동그라미 만들기
-    O: {
-      elbowL: { x: 0.26, y: 0.16 },
-      handL: { x: 0.5, y: 0.0 },
-      elbowR: { x: 0.74, y: 0.16 },
-      handR: { x: 0.5, y: 0.0 }
-    },
-    // L: 왼팔은 수평, 오른팔은 몸통 옆으로 내리기
-    L: {
-      elbowL: { x: 0.24, y: 0.33 },
-      handL: { x: 0.06, y: 0.33 },
-      elbowR: { x: 0.6, y: 0.46 },
-      handR: { x: 0.62, y: 0.6 }
-    }
-  };
-  const arm = arms[target];
+  const layout = GUIDE_LAYOUTS[target];
 
   ctx.save();
   // 셀카 미러 상쇄: 패널 중심 기준 좌우반전.
@@ -190,17 +252,17 @@ export function drawPoseGuide(
     ctx.lineTo(px(bx), py(by));
     ctx.stroke();
   };
-  // 몸통·다리 (전 포즈 공통)
+  // 몸통·다리
   seg(neck.x, neck.y, hip.x, hip.y);
-  seg(hip.x, hip.y, kneeL.x, kneeL.y);
-  seg(kneeL.x, kneeL.y, footL.x, footL.y);
-  seg(hip.x, hip.y, kneeR.x, kneeR.y);
-  seg(kneeR.x, kneeR.y, footR.x, footR.y);
-  // 팔 (포즈별)
-  seg(shoulderL.x, shoulderL.y, arm.elbowL.x, arm.elbowL.y);
-  seg(arm.elbowL.x, arm.elbowL.y, arm.handL.x, arm.handL.y);
-  seg(shoulderR.x, shoulderR.y, arm.elbowR.x, arm.elbowR.y);
-  seg(arm.elbowR.x, arm.elbowR.y, arm.handR.x, arm.handR.y);
+  seg(hip.x, hip.y, layout.kneeL.x, layout.kneeL.y);
+  seg(layout.kneeL.x, layout.kneeL.y, layout.footL.x, layout.footL.y);
+  seg(hip.x, hip.y, layout.kneeR.x, layout.kneeR.y);
+  seg(layout.kneeR.x, layout.kneeR.y, layout.footR.x, layout.footR.y);
+  // 팔 (글자별)
+  seg(shoulderL.x, shoulderL.y, layout.elbowL.x, layout.elbowL.y);
+  seg(layout.elbowL.x, layout.elbowL.y, layout.handL.x, layout.handL.y);
+  seg(shoulderR.x, shoulderR.y, layout.elbowR.x, layout.elbowR.y);
+  seg(layout.elbowR.x, layout.elbowR.y, layout.handR.x, layout.handR.y);
   // 머리
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();

@@ -95,7 +95,7 @@ describe('celebration particles', () => {
 });
 
 describe('ABC pose guide', () => {
-  it.each(['T', 'Y', 'O', 'L'] as const)('%s guide draws panel, stick figure and label', async (target) => {
+  it.each(['T', 'Y', 'O', 'L', 'I', 'K', 'X', 'A'] as const)('%s guide draws panel, stick figure and label', async (target) => {
     const { drawPoseGuide } = await import('../src/ui/renderer');
     const calls: Array<{ m: string; a: unknown[] }> = [];
     const fn = (..._args: unknown[]): undefined => undefined;

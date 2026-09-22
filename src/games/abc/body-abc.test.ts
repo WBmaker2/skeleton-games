@@ -1,7 +1,15 @@
 // tests/body-abc.test.ts
 import { describe, expect, it } from 'vitest';
-import { anglesFromFrame, BodyABC, poseSimilarity, TEMPLATES } from './body-abc';
+import { anglesFromFrame, BodyABC, poseSimilarity, TEMPLATES, type Angles } from './body-abc';
 import type { PoseFrame } from '../../pose/types';
+
+const ALL_TARGETS = ['T', 'Y', 'O', 'L', 'I', 'K', 'X', 'A'] as const;
+
+function holdAll(g: BodyABC, angles: Angles, ticks = 80): string[] {
+  const all: string[] = [];
+  for (let i = 0; i < ticks; i++) all.push(...g.tickAngles(angles, 16).map((e) => e.type));
+  return all;
+}
 
 function frameOf(
   ls: [number, number],
@@ -52,6 +60,27 @@ describe('anglesFromFrame', () => {
     expect(a.leftArm).toBe(0);
     expect(a.rightArm).toBe(0);
   });
+  it('normalizes hand and ankle distance by shoulder width', () => {
+    const f: PoseFrame = {
+      width: 640,
+      height: 480,
+      timestamp: 0,
+      keypoints: [
+        { name: 'left_shoulder', x: 270, y: 120, score: 1 },
+        { name: 'right_shoulder', x: 370, y: 120, score: 1 },
+        { name: 'left_wrist', x: 220, y: 120, score: 1 },
+        { name: 'right_wrist', x: 420, y: 120, score: 1 },
+        { name: 'left_ankle', x: 300, y: 400, score: 1 },
+        { name: 'right_ankle', x: 340, y: 400, score: 1 }
+      ]
+    };
+    const a = anglesFromFrame(f);
+    expect(a.handSpread).toBeCloseTo(2, 2);
+    expect(a.legSpread).toBeCloseTo(0.4, 2);
+  });
+  it('leaves legSpread undefined when ankles are not visible', () => {
+    expect(anglesFromFrame(frameOf([270, 120], [370, 120], [170, 120], [470, 120])).legSpread).toBeUndefined();
+  });
 });
 
 describe('BodyABC', () => {
@@ -81,7 +110,7 @@ describe('BodyABC', () => {
     ) as unknown as CanvasRenderingContext2D;
     const g = new BodyABC();
     g.start();
-    for (const t of ['T', 'Y', 'O', 'L'] as const) {
+    for (const t of ALL_TARGETS) {
       g.target = t;
       arcs = 0;
       texts.length = 0;
@@ -146,5 +175,74 @@ describe('BodyABC', () => {
     expect(done).toHaveLength(10);
     for (let i = 1; i < done.length; i++) expect(done[i]).not.toBe(done[i - 1]);
     expect(new Set(done).size).toBeGreaterThanOrEqual(2);
+  });
+  it('accepts arms-down I pose (breather)', () => {
+    const g = new BodyABC();
+    g.start();
+    g.target = 'I';
+    expect(holdAll(g, { ...TEMPLATES.I })).toContain('pose-ok');
+  });
+  it('accepts K with either arm raised', () => {
+    const variants: Angles[] = [
+      { ...TEMPLATES.K },
+      { leftArm: 20, rightArm: 150, torso: 90 }
+    ];
+    for (const angles of variants) {
+      const g = new BodyABC();
+      g.start();
+      g.target = 'K';
+      expect(holdAll(g, angles)).toContain('pose-ok');
+    }
+  });
+  it('X requires spread legs (Y stance is not X)', () => {
+    const g = new BodyABC();
+    g.start();
+    g.target = 'X';
+    const yStance: Angles = { leftArm: 150, rightArm: 150, torso: 90, handSpread: 2.4, legSpread: 0.7 };
+    expect(holdAll(g, yStance)).not.toContain('pose-ok');
+    expect(holdAll(g, { ...yStance, legSpread: 1.8 })).toContain('pose-ok');
+  });
+  it('Y requires legs together (X stance is not Y)', () => {
+    const g = new BodyABC();
+    g.start();
+    g.target = 'Y';
+    const xStance: Angles = { leftArm: 135, rightArm: 135, torso: 90, handSpread: 2.5, legSpread: 1.8 };
+    expect(holdAll(g, xStance)).not.toContain('pose-ok');
+    expect(holdAll(g, { ...xStance, legSpread: 0.7 })).toContain('pose-ok');
+  });
+  it('A requires hands together above head and spread legs', () => {
+    const aStance: Angles = { leftArm: 160, rightArm: 160, torso: 90, handSpread: 0.3, legSpread: 1.8 };
+    const g1 = new BodyABC();
+    g1.start();
+    g1.target = 'A';
+    expect(holdAll(g1, aStance)).toContain('pose-ok');
+    const g2 = new BodyABC();
+    g2.start();
+    g2.target = 'A';
+    expect(holdAll(g2, { ...aStance, handSpread: 2.4 })).not.toContain('pose-ok');
+    const g3 = new BodyABC();
+    g3.start();
+    g3.target = 'A';
+    expect(holdAll(g3, { ...aStance, legSpread: 0.7 })).not.toContain('pose-ok');
+  });
+  it('O requires hands together (wide arms are Y, not O)', () => {
+    const g = new BodyABC();
+    g.start();
+    g.target = 'O';
+    const wide: Angles = { leftArm: 160, rightArm: 160, torso: 90, handSpread: 2.4, legSpread: 0.7 };
+    expect(holdAll(g, wide)).not.toContain('pose-ok');
+    expect(holdAll(g, { ...wide, handSpread: 0.3 })).toContain('pose-ok');
+  });
+  it('seated mode excludes X and A and ignores leg spread', () => {
+    const g = new BodyABC();
+    expect(g.availableTargets).toHaveLength(8);
+    g.mode = 'seated';
+    expect(g.availableTargets).toHaveLength(6);
+    expect(g.availableTargets).not.toContain('X');
+    expect(g.availableTargets).not.toContain('A');
+    g.start();
+    g.target = 'Y';
+    const seatedY: Angles = { leftArm: 135, rightArm: 135, torso: 90, handSpread: 2.5, legSpread: 1.8 };
+    expect(holdAll(g, seatedY)).toContain('pose-ok');
   });
 });
