@@ -212,10 +212,22 @@ export function drawPoseGuide(
   drawLabel(ctx, target, x + w / 2, y + h - 20, 26);
 }
 
-export type DanceGuideMove = 'left' | 'right' | 'both' | 'down';
+// 리듬 댄스 카피의 동작 집합과 공유한다 (DanceMove와 같은 10종).
+export type DanceGuideMove =
+  | 'left' | 'right' | 'both' | 'down'
+  | 't' | 'y' | 'circle' | 'clap' | 'hips' | 'head';
+
+interface DanceArms {
+  elbowL: { x: number; y: number };
+  handL: { x: number; y: number };
+  elbowR: { x: number; y: number };
+  handR: { x: number; y: number };
+  // 노랑 하이라이트를 찍을 손 ('L'·'R', 내리기는 빈 배열)
+  hot: ('L' | 'R')[];
+}
 
 // 목표 댄스 동작 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
-// 리듬 댄스 카피의 4가지 동작(왼손·오른손·양손·내리기)을 스켈레톤 모양으로 보여준다.
+// 리듬 댄스 카피의 10가지 동작을 스켈레톤 모양으로 보여준다.
 // drawPoseGuide와 같은 렌더 규칙(패널 배경 + 셀카 미러 상쇄 + 하단 글자)을 따른다.
 export function drawDanceGuide(
   ctx: CanvasRenderingContext2D,
@@ -253,13 +265,34 @@ export function drawDanceGuide(
   const footR = { x: 0.64, y: 0.96 };
   const shoulderL = { x: 0.42, y: 0.33 };
   const shoulderR = { x: 0.58, y: 0.33 };
-  // 올림: 대각선 위 (Y 포즈와 동일), 내림: 몸통 옆
+  // 올림: 대각선 위, 내림: 몸통 옆, T: 수평, O: 머리 위 맞대기,
+  // 박수: 가슴 앞 모임, 허리손: 엉덩이 옆, 머리손: 왼손을 머리 옆에
   const upL = { elbow: { x: 0.32, y: 0.18 }, hand: { x: 0.18, y: 0.02 } };
   const downL = { elbow: { x: 0.4, y: 0.46 }, hand: { x: 0.38, y: 0.6 } };
   const upR = { elbow: { x: 0.68, y: 0.18 }, hand: { x: 0.82, y: 0.02 } };
   const downR = { elbow: { x: 0.6, y: 0.46 }, hand: { x: 0.62, y: 0.6 } };
-  const armL = move === 'left' || move === 'both' ? upL : downL;
-  const armR = move === 'right' || move === 'both' ? upR : downR;
+  const tL = { elbow: { x: 0.24, y: 0.33 }, hand: { x: 0.06, y: 0.33 } };
+  const tR = { elbow: { x: 0.76, y: 0.33 }, hand: { x: 0.94, y: 0.33 } };
+  const oL = { elbow: { x: 0.26, y: 0.16 }, hand: { x: 0.5, y: 0.0 } };
+  const oR = { elbow: { x: 0.74, y: 0.16 }, hand: { x: 0.5, y: 0.0 } };
+  const clapL = { elbow: { x: 0.34, y: 0.48 }, hand: { x: 0.47, y: 0.44 } };
+  const clapR = { elbow: { x: 0.66, y: 0.48 }, hand: { x: 0.53, y: 0.44 } };
+  const hipL = { elbow: { x: 0.38, y: 0.46 }, hand: { x: 0.36, y: 0.6 } };
+  const hipR = { elbow: { x: 0.62, y: 0.46 }, hand: { x: 0.64, y: 0.6 } };
+  const headL = { elbow: { x: 0.3, y: 0.24 }, hand: { x: 0.44, y: 0.12 } };
+  const POSES: Record<DanceGuideMove, DanceArms> = {
+    left: { elbowL: upL.elbow, handL: upL.hand, elbowR: downR.elbow, handR: downR.hand, hot: ['L'] },
+    right: { elbowL: downL.elbow, handL: downL.hand, elbowR: upR.elbow, handR: upR.hand, hot: ['R'] },
+    both: { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, hot: ['L', 'R'] },
+    down: { elbowL: downL.elbow, handL: downL.hand, elbowR: downR.elbow, handR: downR.hand, hot: [] },
+    t: { elbowL: tL.elbow, handL: tL.hand, elbowR: tR.elbow, handR: tR.hand, hot: ['L', 'R'] },
+    y: { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, hot: ['L', 'R'] },
+    circle: { elbowL: oL.elbow, handL: oL.hand, elbowR: oR.elbow, handR: oR.hand, hot: ['L', 'R'] },
+    clap: { elbowL: clapL.elbow, handL: clapL.hand, elbowR: clapR.elbow, handR: clapR.hand, hot: ['L', 'R'] },
+    hips: { elbowL: hipL.elbow, handL: hipL.hand, elbowR: hipR.elbow, handR: hipR.hand, hot: ['L', 'R'] },
+    head: { elbowL: headL.elbow, handL: headL.hand, elbowR: downR.elbow, handR: downR.hand, hot: ['L'] }
+  };
+  const arms = POSES[move];
 
   ctx.save();
   // 셀카 미러 상쇄: 패널 중심 기준 좌우반전.
@@ -283,11 +316,11 @@ export function drawDanceGuide(
   seg(kneeL.x, kneeL.y, footL.x, footL.y);
   seg(hip.x, hip.y, kneeR.x, kneeR.y);
   seg(kneeR.x, kneeR.y, footR.x, footR.y);
-  // 팔 (동작별: 올린 손은 굵은 노랑 하이라이트)
-  seg(shoulderL.x, shoulderL.y, armL.elbow.x, armL.elbow.y);
-  seg(armL.elbow.x, armL.elbow.y, armL.hand.x, armL.hand.y);
-  seg(shoulderR.x, shoulderR.y, armR.elbow.x, armR.elbow.y);
-  seg(armR.elbow.x, armR.elbow.y, armR.hand.x, armR.hand.y);
+  // 팔 (동작별: 따라할 손은 노랑 하이라이트)
+  seg(shoulderL.x, shoulderL.y, arms.elbowL.x, arms.elbowL.y);
+  seg(arms.elbowL.x, arms.elbowL.y, arms.handL.x, arms.handL.y);
+  seg(shoulderR.x, shoulderR.y, arms.elbowR.x, arms.elbowR.y);
+  seg(arms.elbowR.x, arms.elbowR.y, arms.handR.x, arms.handR.y);
   const highlight = (hand: { x: number; y: number }): void => {
     ctx.save();
     ctx.fillStyle = '#dfff00';
@@ -296,8 +329,8 @@ export function drawDanceGuide(
     ctx.fill();
     ctx.restore();
   };
-  if (move === 'left' || move === 'both') highlight(armL.hand);
-  if (move === 'right' || move === 'both') highlight(armR.hand);
+  if (arms.hot.includes('L')) highlight(arms.handL);
+  if (arms.hot.includes('R')) highlight(arms.handR);
   // 머리
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
