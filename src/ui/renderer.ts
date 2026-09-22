@@ -212,12 +212,13 @@ export function drawPoseGuide(
   drawLabel(ctx, target, x + w / 2, y + h - 20, 26);
 }
 
-// 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 크기.
+// 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 × scale 크기.
 // 이미지가 없거나 아직 로드 전이면 조용히 건너뛴다.
 export function drawFaceMask(
   ctx: CanvasRenderingContext2D,
   frame: PoseFrame,
-  img: HTMLImageElement | null | undefined
+  img: HTMLImageElement | null | undefined,
+  scale = 1
 ): void {
   if (!img || !img.complete || img.naturalWidth === 0) return;
   const byName = new Map(frame.keypoints.map((k) => [k.name, k]));
@@ -237,7 +238,7 @@ export function drawFaceMask(
   }
   const sw =
     ls && rs ? Math.max(40, Math.hypot(ls.x - rs.x, ls.y - rs.y)) : 100;
-  const size = sw * 1.4;
+  const size = sw * 1.4 * scale;
   // 소스가 정사각이 아니어도 중앙 정사각 크롭으로 왜곡 없이 그린다.
   const side = Math.min(img.naturalWidth, img.naturalHeight);
   const sx = (img.naturalWidth - side) / 2;

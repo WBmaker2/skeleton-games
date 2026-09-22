@@ -14,6 +14,8 @@ export interface Balloon {
 // 풍선 헤딩: 머리로 풍선을 떨어뜨리지 않기. 목·코어.
 export class BalloonHead implements Game {
   id = 'balloon';
+  // 풍선 컴포넌트가 잘 보이도록 얼굴 마스크를 절반 크기로 축소.
+  faceScale = 0.5;
   balloon: Balloon = { x: 320, y: 80, vy: 60, alive: true };
   board = new ScoreBoard();
   hits = 0;

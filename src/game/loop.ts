@@ -148,8 +148,9 @@ export class GameLoop {  private raf = 0;
         try {
           drawSkeleton(this.opts.canvas, frame);
           if (ctx) {
-            // hideFace 게임(예: 수학 퀴즈)은 상단 텍스트 시인성을 위해 마스크 생략.
-            if (!this.opts.game.hideFace) drawFaceMask(ctx, frame, this.opts.face);
+          // hideFace 게임(예: 수학 퀴즈)은 상단 텍스트 시인성을 위해 마스크 생략.
+            // faceScale 게임(예: 풍선 헤딩 0.5)은 게임 요소 시인성을 위해 축소.
+            if (!this.opts.game.hideFace) drawFaceMask(ctx, frame, this.opts.face, this.opts.game.faceScale ?? 1);
             drawParticles(ctx, this.particles);
           }
         } catch {
