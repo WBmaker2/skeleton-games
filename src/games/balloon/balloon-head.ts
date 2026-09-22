@@ -1,5 +1,4 @@
 import type { PoseFrame } from '../../pose/types';
-import { getByName } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawLabel } from '../../ui/renderer';
@@ -57,11 +56,18 @@ export class BalloonHead implements Game {
     drawLabel(ctx, `${this.hits}번`, width - 70, 50, 30);
   }
   private headOf(frame: PoseFrame): { x: number; y: number } | null {
-    const nose = getByName(frame, 'nose');
-    if (nose && (nose.score ?? 0) > 0.3) return nose;
-    const ls = getByName(frame, 'left_shoulder');
-    const rs = getByName(frame, 'right_shoulder');
-    if (ls && rs) return { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 - 40 };
+    // 헤딩 판정점: 얼굴 중심(코)이 아니라 마스크 상단(이마·머리 경계선).
+    // 화면에 그려지는 마스크와 같은 기준으로 상단점을 구한다:
+    // 마스크 한 변 = 어깨너비 × 1.4 × faceScale, 중심은 코 위치.
+    const byName = new Map(frame.keypoints.map((k) => [k.name, k]));
+    const nose = byName.get('nose');
+    const ls = byName.get('left_shoulder');
+    const rs = byName.get('right_shoulder');
+    const sw =
+      ls && rs ? Math.max(40, Math.hypot(ls.x - rs.x, ls.y - rs.y)) : 100;
+    const half = (sw * 1.4 * this.faceScale) / 2;
+    if (nose && (nose.score ?? 0) > 0.3) return { x: nose.x, y: nose.y - half };
+    if (ls && rs) return { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 - 40 - half };
     return null;
   }
   private static readonly MAX_BALLOONS = 3;

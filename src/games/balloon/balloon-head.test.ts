@@ -32,6 +32,17 @@ describe('BalloonHead', () => {
     expect(events.some((e) => e.type === 'bump')).toBe(true);
     expect(g.hits).toBe(1);
   });
+  it('bumps with the top of the head, not the face center', () => {
+    const g = new BalloonHead();
+    g.start();
+    // 코(320, 200)·어깨너비 100 → 마스크 상단(이마)은 y=165.
+    // 풍선 중심이 y=120이면 얼굴 중심과는 80px 떨어져 있지만
+    // 풍선 아랫부분(165)이 이마에 닿아 헤딩으로 인정된다.
+    g.balloons = oneBalloon(320, 120);
+    const events = g.tick(frame([kp('nose', 320, 200), ...torso(320)]), 16);
+    expect(events.some((e) => e.type === 'bump')).toBe(true);
+    expect(g.hits).toBe(1);
+  });
   it('does not double-count a single heading across frames', () => {
     const g = new BalloonHead();
     g.start();
