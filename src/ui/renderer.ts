@@ -73,13 +73,20 @@ export function drawLabel(
   text: string,
   x: number,
   y: number,
-  size = 28
+  size = 28,
+  canvasWidth?: number
 ): void {
   ctx.save();
   // 스테이지 캔버스는 셀카 미러(CSS scaleX(-1))로 표시되므로,
   // 글자를 미리 좌우반전해 그려야 사용자에게 정상으로 보인다.
-  // 글자 중심 기준 반전이라 위치·레이아웃은 그대로 유지된다.
-  ctx.translate(x, y);
+  // 중앙(x=W/2)은 글자 중심 기준 반전만으로 위치가 유지되지만,
+  // 오른쪽 끝(x=W-70) 같은 고정 UI는 CSS 미러에 의해 화면 반대편으로
+  // 옮겨 보이므로, canvasWidth를 넘기면 비트맵에는 W-x에 그려
+  // 화면 표시 위치를 x에 고정한다 (글자 모양은 이중 반전으로 정상).
+  // canvasWidth가 없으면 기존처럼 비트맵 x에 그려 게임 오브젝트
+  // (수학 선택지 박스 등)와 함께 미러되어 정렬을 유지한다.
+  const bx = canvasWidth != null ? canvasWidth - x : x;
+  ctx.translate(bx, y);
   ctx.scale(-1, 1);
   ctx.font = `bold ${size}px sans-serif`;
   ctx.textAlign = 'center';
