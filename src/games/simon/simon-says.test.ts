@@ -40,10 +40,29 @@ function rightFrame(): PoseFrame {
   ]);
 }
 
-// 지시 순서 left→right→both이므로 두 번 맞혀 양손 차례로 이동한다.
+// 현재 지시에 맞는 프레임 (left·right·both·down 4종).
+function frameFor(cmd: string): PoseFrame {
+  switch (cmd) {
+    case 'left': return leftFrame();
+    case 'right': return rightFrame();
+    case 'both':
+      return frame([
+        ...shoulders(),
+        kp('left_wrist', 220, 60), kp('right_wrist', 420, 60)
+      ]);
+    default:
+      return frame([
+        ...shoulders(),
+        kp('left_wrist', 220, 200), kp('right_wrist', 420, 200)
+      ]);
+  }
+}
+
+// 랜덤 출제이므로 맞히기를 반복해 양손 차례가 올 때까지 이동한다.
 function toBoth(g: SimonSays): void {
-  g.tick(leftFrame(), 16);
-  g.tick(rightFrame(), 16);
+  for (let i = 0; i < 20 && g.command !== 'both'; i++) {
+    g.tick(frameFor(g.command), 16);
+  }
   expect(g.command).toBe('both');
 }
 
@@ -66,7 +85,8 @@ describe('SimonSays', () => {
     ]);
     const events = g.tick(leftFrame, 16);
     expect(events.some((e) => e.type === 'correct')).toBe(true);
-    expect(g.command).toBe('right');
+    // 랜덤 출제: 맞힌 지시와 다른 지시 중 하나가 다음으로 나온다.
+    expect(g.command).not.toBe('left');
   });
   it('times out on sustained mismatch', () => {
     const g = new SimonSays();
@@ -120,5 +140,19 @@ describe('SimonSays', () => {
       kp('left_wrist', 220, 200), kp('right_wrist', 420, 200)
     ]), 16);
     expect(events.some((e) => e.type === 'correct')).toBe(false);
+  });
+  it('picks random commands without immediate repeats', () => {
+    const g = new SimonSays();
+    g.start();
+    const seen: string[] = [g.command];
+    for (let i = 0; i < 100; i++) {
+      const events = g.tick(frameFor(g.command), 16);
+      expect(events.some((e) => e.type === 'correct')).toBe(true);
+      seen.push(g.command);
+    }
+    // 2번 연속 같은 지시는 나오지 않는다.
+    for (let i = 1; i < seen.length; i++) expect(seen[i]).not.toBe(seen[i - 1]);
+    // 4종 지시가 골고루 나온다.
+    expect(new Set(seen)).toEqual(new Set(['left', 'right', 'both', 'down']));
   });
 });

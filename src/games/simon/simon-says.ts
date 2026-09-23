@@ -27,13 +27,12 @@ export class SimonSays implements Game {
   id = 'simon';
   // 상단에 지시 텍스트가 나오므로 얼굴 마스크를 그리지 않는다 (시인성).
   hideFace = true;
-  commands: SimonCmd[] = ['left', 'right', 'both', 'down', 'right', 'left'];
+  commands: SimonCmd[] = ['left', 'right', 'both', 'down'];
   command: SimonCmd = 'left';
   board = new ScoreBoard();
   solved = 0;
   private running = false;
   private waitMs = 0;
-  private ci = 0;
 
   get timeFrac(): number {
     return Math.min(1, this.waitMs / 2500);
@@ -43,7 +42,6 @@ export class SimonSays implements Game {
     this.running = true;
     this.board.reset();
     this.solved = 0;
-    this.ci = 0;
     this.command = this.commands[0];
     this.waitMs = 0;
   }
@@ -73,7 +71,13 @@ export class SimonSays implements Game {
   }
   private next(): void {
     this.waitMs = 0;
-    this.ci = (this.ci + 1) % this.commands.length;
-    this.command = this.commands[this.ci];
+    this.command = this.pickRandomCommand(this.command);
+  }
+
+  // 랜덤 출제: 고정 순서(left→right→both→down) 대신 매번 무작위로 고른다.
+  // 바로 직전 지시와 겹치지 않게 후보에서 제외한다 (리듬 댄스·몸으로 ABC와 동일).
+  private pickRandomCommand(exclude?: SimonCmd): SimonCmd {
+    const pool = this.commands.filter((c) => c !== exclude);
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 }
