@@ -2,7 +2,7 @@ import type { PoseFrame } from '../../pose/types';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { anglesFromFrame, poseSimilarity, type Angles } from '../abc';
-import { drawBar, drawLabel } from '../../ui/renderer';
+import { drawBar, drawLabel, drawYogaGuide } from '../../ui/renderer';
 
 export interface YogaPose {
   name: string;
@@ -18,6 +18,8 @@ export const YOGA_POSES: YogaPose[] = [
 // 요가 거울: 자세를 3초 버티기. 균형·자세교정.
 export class YogaMirror implements Game {
   id = 'yoga';
+  // 상단에 목표 자세(글자+스켈레톤 가이드)가 나오므로 얼굴 마스크를 그리지 않는다 (시인성).
+  hideFace = true;
   pose: YogaPose = YOGA_POSES[0];
   board = new ScoreBoard();
   completed = 0;
@@ -39,6 +41,12 @@ export class YogaMirror implements Game {
   draw(ctx: CanvasRenderingContext2D, width: number): void {
     drawLabel(ctx, `${this.pose.name} 자세`, width / 2, 66, 44);
     drawBar(ctx, width / 2 - 130, 110, 260, 14, this.progress, '#3d9e57');
+    // 따라할 자세 스켈레톤 예시: 오른쪽 위 패널에 막대인간 가이드를 함께 보여준다.
+    // 글자만으로는 팔 모양을 알기 어려우니, 코드로 그리는 벡터 가이드로 보완한다.
+    const gw = 140;
+    const gh = 180;
+    const gx = Math.max(8, width - gw - 16);
+    drawYogaGuide(ctx, this.pose.name as '나무' | '전사', gx, 16, gw, gh, `${this.pose.name} 자세`);
   }
   get progress(): number {
     return Math.min(1, this.holdMs / 3000);

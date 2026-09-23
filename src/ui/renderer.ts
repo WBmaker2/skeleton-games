@@ -404,6 +404,105 @@ export function drawDanceGuide(
   drawLabel(ctx, label ?? move, x + w / 2, y + h - 20, 26);
 }
 
+// 요가 거울의 자세 집합 (YogaMirror.pose.name과 같은 2종).
+export type YogaGuidePose = '나무' | '전사';
+
+// 목표 요가 자세 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
+// 나무(한 팔 올림+한 팔 내림)·전사(양팔 올림) 모양을 바로 확인할 수 있다.
+// drawPoseGuide·drawDanceGuide와 같은 렌더 규칙(패널 배경 + 셀카 미러 상쇄 + 하단 글자)을 따른다.
+export function drawYogaGuide(
+  ctx: CanvasRenderingContext2D,
+  pose: YogaGuidePose,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label?: string
+): void {
+  ctx.save();
+  ctx.fillStyle = 'rgba(10, 16, 22, 0.72)';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  const rr = (ctx as unknown as { roundRect?: (...a: number[]) => void }).roundRect;
+  if (typeof rr === 'function') rr.call(ctx, x, y, w, h, 14);
+  else ctx.rect(x, y, w, h);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  const padX = 12;
+  const top = y + 12;
+  const bottom = y + h - 40;
+  const px = (fx: number): number => x + padX + fx * (w - padX * 2);
+  const py = (fy: number): number => top + fy * Math.max(1, bottom - top);
+
+  const head = { x: 0.5, y: 0.1 };
+  const neck = { x: 0.5, y: 0.28 };
+  const hip = { x: 0.5, y: 0.6 };
+  const kneeL = { x: 0.42, y: 0.79 };
+  const kneeR = { x: 0.58, y: 0.79 };
+  const footL = { x: 0.36, y: 0.96 };
+  const footR = { x: 0.64, y: 0.96 };
+  const shoulderL = { x: 0.42, y: 0.33 };
+  const shoulderR = { x: 0.58, y: 0.33 };
+  // YOGA_POSES 템플릿과 일치: 나무=왼팔 올림+오른팔 내림, 전사=양팔 대각선 위.
+  const upL = { elbow: { x: 0.32, y: 0.18 }, hand: { x: 0.18, y: 0.02 } };
+  const downR = { elbow: { x: 0.6, y: 0.46 }, hand: { x: 0.62, y: 0.6 } };
+  const upR = { elbow: { x: 0.68, y: 0.18 }, hand: { x: 0.82, y: 0.02 } };
+  const arms =
+    pose === '나무'
+      ? { elbowL: upL.elbow, handL: upL.hand, elbowR: downR.elbow, handR: downR.hand, hot: ['L'] as ('L' | 'R')[] }
+      : { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, hot: ['L', 'R'] as ('L' | 'R')[] };
+
+  ctx.save();
+  // 셀카 미러 상쇄: 패널 중심 기준 좌우반전.
+  const cx = x + w / 2;
+  ctx.translate(cx, 0);
+  ctx.scale(-1, 1);
+  ctx.translate(-cx, 0);
+  ctx.strokeStyle = '#00ffff';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const seg = (ax: number, ay: number, bx: number, by: number): void => {
+    ctx.beginPath();
+    ctx.moveTo(px(ax), py(ay));
+    ctx.lineTo(px(bx), py(by));
+    ctx.stroke();
+  };
+  // 몸통·다리 (두 자세 공통: 다리는 모음)
+  seg(neck.x, neck.y, hip.x, hip.y);
+  seg(hip.x, hip.y, kneeL.x, kneeL.y);
+  seg(kneeL.x, kneeL.y, footL.x, footL.y);
+  seg(hip.x, hip.y, kneeR.x, kneeR.y);
+  seg(kneeR.x, kneeR.y, footR.x, footR.y);
+  // 팔 (자세별: 따라할 손은 노랑 하이라이트)
+  seg(shoulderL.x, shoulderL.y, arms.elbowL.x, arms.elbowL.y);
+  seg(arms.elbowL.x, arms.elbowL.y, arms.handL.x, arms.handL.y);
+  seg(shoulderR.x, shoulderR.y, arms.elbowR.x, arms.elbowR.y);
+  seg(arms.elbowR.x, arms.elbowR.y, arms.handR.x, arms.handR.y);
+  const highlight = (hand: { x: number; y: number }): void => {
+    ctx.save();
+    ctx.fillStyle = '#dfff00';
+    ctx.beginPath();
+    ctx.arc(px(hand.x), py(hand.y), 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  };
+  if (arms.hot.includes('L')) highlight(arms.handL);
+  if (arms.hot.includes('R')) highlight(arms.handR);
+  // 머리
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(px(head.x), py(head.y), Math.min(w, h) * 0.09, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 패널 하단 자세 글자 (drawLabel이 미러를 자체 보정).
+  drawLabel(ctx, label ?? pose, x + w / 2, y + h - 20, 26);
+}
+
 // 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 × scale 크기.
 // 이미지가 없거나 아직 로드 전이면 조용히 건너뛴다.
 export function drawFaceMask(
