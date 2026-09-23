@@ -1,19 +1,51 @@
 import type { PoseFrame } from '../../pose/types';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
-import { anglesFromFrame, poseSimilarity, type Angles } from '../abc';
-import { drawBar, drawLabel, drawYogaGuide } from '../../ui/renderer';
+import { anglesFromFrame, poseSimilarity, SPREAD_SPLIT, type Angles } from '../abc';
+import { drawBar, drawLabel, drawYogaGuide, type YogaGuidePose } from '../../ui/renderer';
+
+export type SpreadNeed = 'together' | 'apart';
 
 export interface YogaPose {
-  name: string;
+  name: YogaGuidePose;
   angles: Angles;
+  // 손 모음(합장·나무)·손 벌림(산·만세), 다리 모음·벌림(전사·삼각) 조건.
+  // 조건이 없거나 측정이 안 됐으면(앉음·부분 가림) 통과시킨다.
+  hand?: SpreadNeed;
+  legs?: SpreadNeed;
+  // 좌우 뒤집힌 자세도 인정할 때 (삼각: 어느 쪽 팔을 올려도 됨).
+  mirrorAngles?: Angles;
 }
 
+// 성공 판정 임계값: 양팔 평균 유사도 0.7 (양팔 합쳐 ±27°까지 허용).
+export const YOGA_SIM_THRESHOLD = 0.7;
+
+// 쉬운 순서대로: 산→전사→만세→합장→삼각→나무. 3초씩 버티면 다음으로 넘어간다.
+//  - 산: 차렷 (팔 내림+다리 모음)
+//  - 전사: 실제 전사2번 (양팔 수평 T자+다리 벌림)
+//  - 만세: 양팔 대각선 위+손 벌림+다리 모음 (우르드바 하스타사나)
+//  - 합장: 가슴 앞 손 모음+다리 모음 (안잘리 무드라)
+//  - 삼각: 한 팔 위+한 팔 아래+다리 벌림 (좌우 어느 쪽이든 인정)
+//  - 나무: 양손 머리 위 모음+다리 모음 (브륵사사나 팔 모양)
 export const YOGA_POSES: YogaPose[] = [
-  // 팔 각도 스케일(0=내림, 90=수평, 180=올림): 나무는 왼팔 올림+오른팔 내림, 전사는 양팔 올림.
-  { name: '나무', angles: { leftArm: 170, rightArm: 10, torso: 90 } },
-  { name: '전사', angles: { leftArm: 155, rightArm: 155, torso: 90 } }
+  { name: '산', angles: { leftArm: 15, rightArm: 15, torso: 90 }, hand: 'apart', legs: 'together' },
+  { name: '전사', angles: { leftArm: 90, rightArm: 90, torso: 90 }, legs: 'apart' },
+  { name: '만세', angles: { leftArm: 135, rightArm: 135, torso: 90 }, hand: 'apart', legs: 'together' },
+  { name: '합장', angles: { leftArm: 50, rightArm: 50, torso: 90 }, hand: 'together', legs: 'together' },
+  {
+    name: '삼각',
+    angles: { leftArm: 150, rightArm: 10, torso: 90 },
+    mirrorAngles: { leftArm: 10, rightArm: 150, torso: 90 },
+    legs: 'apart'
+  },
+  { name: '나무', angles: { leftArm: 160, rightArm: 160, torso: 90 }, hand: 'together', legs: 'together' }
 ];
+
+function spreadMatches(value: number | undefined, need: SpreadNeed | undefined): boolean {
+  // 조건이 없거나 측정이 안 됐으면 통과시킨다 (앉음 모드·부분 가림 배려).
+  if (need === undefined || value === undefined) return true;
+  return need === 'apart' ? value >= SPREAD_SPLIT : value < SPREAD_SPLIT;
+}
 
 // 요가 거울: 자세를 3초 버티기. 균형·자세교정.
 export class YogaMirror implements Game {
@@ -46,17 +78,25 @@ export class YogaMirror implements Game {
     const gw = 140;
     const gh = 180;
     const gx = Math.max(8, width - gw - 16);
-    drawYogaGuide(ctx, this.pose.name as '나무' | '전사', gx, 16, gw, gh, `${this.pose.name} 자세`);
+    drawYogaGuide(ctx, this.pose.name, gx, 16, gw, gh, `${this.pose.name} 자세`);
   }
   get progress(): number {
     return Math.min(1, this.holdMs / 3000);
   }
-  tick(frame: PoseFrame, dtMs: number): GameEvent[] {
+  // 팔 유사도와 손·다리 벌림 조건을 모두 통과해야 그 자세로 인정한다.
+  matches(current: Angles, pose: YogaPose): boolean {
+    const armsOk = pose.mirrorAngles
+      ? poseSimilarity(current, pose.angles) >= YOGA_SIM_THRESHOLD ||
+        poseSimilarity(current, pose.mirrorAngles) >= YOGA_SIM_THRESHOLD
+      : poseSimilarity(current, pose.angles) >= YOGA_SIM_THRESHOLD;
+    if (!armsOk) return false;
+    if (!spreadMatches(current.handSpread, pose.hand)) return false;
+    if (!spreadMatches(current.legSpread, pose.legs)) return false;
+    return true;
+  }
+  tickAngles(current: Angles, dtMs: number): GameEvent[] {
     if (!this.running) return [];
-    const sim = poseSimilarity(anglesFromFrame(frame), this.pose.angles);
-    // 예전 임계값 0.8은 항상 90인 torso까지 평균한 값이라 양팔만으로 치면 0.7과 동등.
-    // poseSimilarity가 팔만 비교하도록 바뀌었으므로 0.7로 맞춰 기존 난이도를 유지한다.
-    if (sim <= 0.7) {
+    if (!this.matches(current, this.pose)) {
       this.holdMs = 0;
       return [];
     }
@@ -70,5 +110,8 @@ export class YogaMirror implements Game {
     this.board.comboHit();
     this.board.add(25);
     return [{ type: 'pose-done', points: 25, label: `${done}자세 완성!` }];
+  }
+  tick(frame: PoseFrame, dtMs: number): GameEvent[] {
+    return this.tickAngles(anglesFromFrame(frame), dtMs);
   }
 }

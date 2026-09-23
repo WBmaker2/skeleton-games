@@ -404,11 +404,11 @@ export function drawDanceGuide(
   drawLabel(ctx, label ?? move, x + w / 2, y + h - 20, 26);
 }
 
-// 요가 거울의 자세 집합 (YogaMirror.pose.name과 같은 2종).
-export type YogaGuidePose = '나무' | '전사';
+// 요가 거울의 자세 집합 (YOGA_POSES 이름과 같은 6종).
+export type YogaGuidePose = '산' | '전사' | '만세' | '합장' | '삼각' | '나무';
 
 // 목표 요가 자세 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
-// 나무(한 팔 올림+한 팔 내림)·전사(양팔 올림) 모양을 바로 확인할 수 있다.
+// 산(차렷)·전사(T자+다리벌림)·만세(V자)·합장(가슴모음)·삼각(한팔위+다리벌림)·나무(머리위모음) 모양을 바로 확인할 수 있다.
 // drawPoseGuide·drawDanceGuide와 같은 렌더 규칙(패널 배경 + 셀카 미러 상쇄 + 하단 글자)을 따른다.
 export function drawYogaGuide(
   ctx: CanvasRenderingContext2D,
@@ -440,20 +440,46 @@ export function drawYogaGuide(
   const head = { x: 0.5, y: 0.1 };
   const neck = { x: 0.5, y: 0.28 };
   const hip = { x: 0.5, y: 0.6 };
-  const kneeL = { x: 0.42, y: 0.79 };
-  const kneeR = { x: 0.58, y: 0.79 };
-  const footL = { x: 0.36, y: 0.96 };
-  const footR = { x: 0.64, y: 0.96 };
   const shoulderL = { x: 0.42, y: 0.33 };
   const shoulderR = { x: 0.58, y: 0.33 };
-  // YOGA_POSES 템플릿과 일치: 나무=왼팔 올림+오른팔 내림, 전사=양팔 대각선 위.
-  const upL = { elbow: { x: 0.32, y: 0.18 }, hand: { x: 0.18, y: 0.02 } };
+  // 다리 모양: 모은 다리(기둥)와 벌린 다리(전사·삼각)를 쓴다. 판정 조건과 일치한다.
+  const legsTogether = {
+    kneeL: { x: 0.42, y: 0.79 },
+    kneeR: { x: 0.58, y: 0.79 },
+    footL: { x: 0.36, y: 0.96 },
+    footR: { x: 0.64, y: 0.96 }
+  };
+  const legsOpen = {
+    kneeL: { x: 0.28, y: 0.78 },
+    kneeR: { x: 0.72, y: 0.78 },
+    footL: { x: 0.16, y: 0.95 },
+    footR: { x: 0.84, y: 0.95 }
+  };
+  // YOGA_POSES 템플릿과 일치: 산=내림, 전사=T자, 만세=V자, 합장=가슴모음, 삼각=한팔위, 나무=머리위모음.
+  const downL = { elbow: { x: 0.4, y: 0.46 }, hand: { x: 0.38, y: 0.6 } };
   const downR = { elbow: { x: 0.6, y: 0.46 }, hand: { x: 0.62, y: 0.6 } };
+  const upL = { elbow: { x: 0.32, y: 0.18 }, hand: { x: 0.18, y: 0.02 } };
   const upR = { elbow: { x: 0.68, y: 0.18 }, hand: { x: 0.82, y: 0.02 } };
-  const arms =
-    pose === '나무'
-      ? { elbowL: upL.elbow, handL: upL.hand, elbowR: downR.elbow, handR: downR.hand, hot: ['L'] as ('L' | 'R')[] }
-      : { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, hot: ['L', 'R'] as ('L' | 'R')[] };
+  const tL = { elbow: { x: 0.24, y: 0.33 }, hand: { x: 0.06, y: 0.33 } };
+  const tR = { elbow: { x: 0.76, y: 0.33 }, hand: { x: 0.94, y: 0.33 } };
+  const clapL = { elbow: { x: 0.34, y: 0.48 }, hand: { x: 0.47, y: 0.44 } };
+  const clapR = { elbow: { x: 0.66, y: 0.48 }, hand: { x: 0.53, y: 0.44 } };
+  const overL = { elbow: { x: 0.36, y: 0.2 }, hand: { x: 0.5, y: 0.0 } };
+  const overR = { elbow: { x: 0.64, y: 0.2 }, hand: { x: 0.5, y: 0.0 } };
+  const POSES: Record<YogaGuidePose, {
+    elbowL: { x: number; y: number }; handL: { x: number; y: number };
+    elbowR: { x: number; y: number }; handR: { x: number; y: number };
+    legs: typeof legsTogether; hot: ('L' | 'R')[];
+  }> = {
+    산: { elbowL: downL.elbow, handL: downL.hand, elbowR: downR.elbow, handR: downR.hand, legs: legsTogether, hot: [] },
+    전사: { elbowL: tL.elbow, handL: tL.hand, elbowR: tR.elbow, handR: tR.hand, legs: legsOpen, hot: ['L', 'R'] },
+    만세: { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, legs: legsTogether, hot: ['L', 'R'] },
+    합장: { elbowL: clapL.elbow, handL: clapL.hand, elbowR: clapR.elbow, handR: clapR.hand, legs: legsTogether, hot: ['L', 'R'] },
+    삼각: { elbowL: upL.elbow, handL: upL.hand, elbowR: downR.elbow, handR: downR.hand, legs: legsOpen, hot: ['L'] },
+    나무: { elbowL: overL.elbow, handL: overL.hand, elbowR: overR.elbow, handR: overR.hand, legs: legsTogether, hot: ['L', 'R'] }
+  };
+  const arms = POSES[pose];
+  const { kneeL, kneeR, footL, footR } = arms.legs;
 
   ctx.save();
   // 셀카 미러 상쇄: 패널 중심 기준 좌우반전.
@@ -471,7 +497,7 @@ export function drawYogaGuide(
     ctx.lineTo(px(bx), py(by));
     ctx.stroke();
   };
-  // 몸통·다리 (두 자세 공통: 다리는 모음)
+  // 몸통·다리 (자세별: 전사·삼각은 다리 벌림)
   seg(neck.x, neck.y, hip.x, hip.y);
   seg(hip.x, hip.y, kneeL.x, kneeL.y);
   seg(kneeL.x, kneeL.y, footL.x, footL.y);
