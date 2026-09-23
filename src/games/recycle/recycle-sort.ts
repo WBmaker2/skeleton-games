@@ -86,12 +86,31 @@ export class RecycleSort implements Game {
   // 종류도 번갈아가 아닌 랜덤이라 매번 통을 확인해야 한다.
   private spawn(): void {
     const kind: RecycleKind = this.rnd() < 0.5 ? 'plastic' : 'can';
-    const margin = 60;
-    const x = this.dimW / 3 + margin + this.rnd() * Math.max(1, this.dimW / 3 - margin * 2);
-    const y = this.dimH - 180 - this.rnd() * 60;
-    this.item = { kind, x, y, alive: true };
+    const pos = this.randomMiddlePos(this.dimW, this.dimH);
+    this.item = { kind, x: pos.x, y: pos.y, alive: true };
     this.carriedBy = null;
     this.binHoldMs = 0;
+  }
+
+  // 가운데 칸 안의 랜덤 위치 (가로 중앙 1/3·세로 바닥 위 140~240px).
+  private randomMiddlePos(w: number, h: number): { x: number; y: number } {
+    const margin = 60;
+    const x = w / 3 + margin + this.rnd() * Math.max(1, w / 3 - margin * 2);
+    const y = h - 180 - this.rnd() * 60;
+    return { x, y };
+  }
+
+  // 들고 있지 않은 쓰레기를 가운데 칸 안으로 보정한다.
+  // 첫 생성은 640×480 기본값 기준이라 실제 해상도(예: 1280×720)와 다르면
+  // 옆 칸에 비쳐 보이므로, 해상도가 바뀐 틱에 비율대로 옮기고 밴드로 고정한다.
+  private clampToMiddle(w: number, h: number): void {
+    const margin = 60;
+    const loX = w / 3 + margin;
+    const hiX = (w * 2) / 3 - margin;
+    const loY = h - 240;
+    const hiY = h - 140;
+    if (hiX > loX) this.item.x = Math.min(hiX, Math.max(loX, this.item.x));
+    if (hiY > loY) this.item.y = Math.min(hiY, Math.max(loY, this.item.y));
   }
 
   private next(): void {
@@ -261,8 +280,15 @@ export class RecycleSort implements Game {
       }
     }
     if (!this.running || !this.item.alive) return [];
-    this.dimW = frame.width;
-    this.dimH = frame.height;
+    // 해상도가 바뀌면(첫 생성의 기본값 포함) 들고 있지 않은 쓰레기를
+    // 비율대로 옮기고 가운데 칸으로 보정한다. 들고 있는 중이면 손이 덮어쓴다.
+    if (frame.width !== this.dimW || frame.height !== this.dimH) {
+      this.item.x = (this.item.x / Math.max(1, this.dimW)) * frame.width;
+      this.item.y = (this.item.y / Math.max(1, this.dimH)) * frame.height;
+      this.dimW = frame.width;
+      this.dimH = frame.height;
+      if (this.carriedBy === null) this.clampToMiddle(frame.width, frame.height);
+    }
     const palms: { side: 'left' | 'right'; x: number; y: number }[] = [];
     for (const side of ['left', 'right'] as const) {
       const p = palmOf(frame, side);

@@ -47,6 +47,18 @@ describe('RecycleSort grab-and-carry', () => {
     expect(g.item.y).toBeLessThanOrEqual(480 - 180);
     expect(g.carriedBy).toBeNull();
   });
+  it('moves the first spawn into the middle when the frame is larger', () => {
+    const g = new RecycleSort();
+    g.start();
+    // 첫 생성은 640×480 기본값 기준. 실제 프레임(1280×720)이 들어오면
+    // 비율대로 옮기고 가운데 칸으로 보정해야 옆 칸에 비치지 않는다.
+    g.tick(frame([...torso(640), ...hands(100, 100)], 1280, 720), 16);
+    expect(g.item.x).toBeGreaterThanOrEqual(1280 / 3);
+    expect(g.item.x).toBeLessThanOrEqual((1280 * 2) / 3);
+    expect(g.item.y).toBeGreaterThanOrEqual(720 - 240);
+    expect(g.item.y).toBeLessThanOrEqual(720 - 140);
+    expect(g.carriedBy).toBeNull();
+  });
   it('spawns positions randomly within the middle', () => {
     const g = new RecycleSort();
     g.start();
