@@ -115,6 +115,20 @@ describe('YogaMirror', () => {
     expect(seen).toContain('pose-done');
     expect(g.pose.name).toBe('전사');
   });
+  it('passes mountain with hands close to the body', () => {
+    // 손을 몸통에 붙여 내려 손 간격이 어깨너비 1.1배여도 산으로 인정 (예전 1.3 기준 탈락).
+    const g = new YogaMirror();
+    g.start();
+    expect(g.pose.name).toBe('산');
+    const handsClose = frame([
+      ...shoulders(), kp('left_wrist', 265, 205), kp('right_wrist', 375, 205),
+      kp('left_ankle', 300, 300), kp('right_ankle', 340, 300)
+    ]);
+    const seen: string[] = [];
+    for (let i = 0; i < 200; i++) seen.push(...g.tick(handsClose, 16).map((e) => e.type));
+    expect(seen).toContain('pose-done');
+    expect(g.pose.name).toBe('전사');
+  });
   it('resets hold when pose breaks', () => {
     const g = new YogaMirror();
     g.start();

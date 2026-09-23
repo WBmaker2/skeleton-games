@@ -12,6 +12,8 @@ export interface YogaPose {
   // 손 모음(합장·나무)·손 벌림(산·만세), 다리 모음·벌림(전사·삼각) 조건.
   // 조건이 없거나 측정이 안 됐으면(앉음·부분 가림) 통과시킨다.
   hand?: SpreadNeed;
+  // 손 벌림 판정 기준(어깨너비 배수). 없으면 SPREAD_SPLIT(1.3).
+  handSplit?: number;
   legs?: SpreadNeed;
   // 좌우 뒤집힌 자세도 인정할 때 (삼각: 어느 쪽 팔을 올려도 됨).
   mirrorAngles?: Angles;
@@ -31,7 +33,8 @@ export const YOGA_SIM_THRESHOLD = 0.6;
 //  - 나무: 양손 머리 위 모음+다리 모음 (브륵사사나 팔 모양)
 export const YOGA_POSES: YogaPose[] = [
   // 산은 다리를 보지 않는다 (차렷이면 되며, 전사·삼각 뒤에 발을 벌린 채로 있어도 통과).
-  { name: '산', angles: { leftArm: 15, rightArm: 15, torso: 90 }, hand: 'apart' },
+  // 손은 몸통에 붙여 내려도 통과되게 벌림 기준을 0.8배로 완화 (합장 0.2~0.5와는 구별됨).
+  { name: '산', angles: { leftArm: 15, rightArm: 15, torso: 90 }, hand: 'apart', handSplit: 0.8 },
   { name: '전사', angles: { leftArm: 90, rightArm: 90, torso: 90 }, legs: 'apart' },
   { name: '만세', angles: { leftArm: 135, rightArm: 135, torso: 90 }, hand: 'apart', legs: 'together' },
   { name: '합장', angles: { leftArm: 50, rightArm: 50, torso: 90 }, hand: 'together', legs: 'together' },
@@ -44,10 +47,10 @@ export const YOGA_POSES: YogaPose[] = [
   { name: '나무', angles: { leftArm: 160, rightArm: 160, torso: 90 }, hand: 'together', legs: 'together' }
 ];
 
-function spreadMatches(value: number | undefined, need: SpreadNeed | undefined): boolean {
+function spreadMatches(value: number | undefined, need: SpreadNeed | undefined, split = SPREAD_SPLIT): boolean {
   // 조건이 없거나 측정이 안 됐으면 통과시킨다 (앉음 모드·부분 가림 배려).
   if (need === undefined || value === undefined) return true;
-  return need === 'apart' ? value >= SPREAD_SPLIT : value < SPREAD_SPLIT;
+  return need === 'apart' ? value >= split : value < split;
 }
 
 // 요가 거울: 자세를 3초 버티기. 균형·자세교정.
@@ -94,7 +97,7 @@ export class YogaMirror implements Game {
         poseSimilarity(current, pose.mirrorAngles) >= YOGA_SIM_THRESHOLD
       : poseSimilarity(current, pose.angles) >= YOGA_SIM_THRESHOLD;
     if (!armsOk) return false;
-    if (!spreadMatches(current.handSpread, pose.hand)) return false;
+    if (!spreadMatches(current.handSpread, pose.hand, pose.handSplit)) return false;
     if (!spreadMatches(current.legSpread, pose.legs)) return false;
     return true;
   }
