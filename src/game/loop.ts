@@ -34,7 +34,9 @@ export interface LoopOpts {
 // 축하 이펙트를 터뜨리는 성공 이벤트들 (12종 게임 공통).
 const CELEBRATE = new Set([
   'slice', 'catch', 'bump', 'dodge', 'duck',
-  'beat', 'correct', 'pose-ok', 'pose-done', 'pair', 'sorted'
+  'beat', 'correct', 'pose-ok', 'pose-done', 'pair', 'sorted',
+  // 분리수거 잡기: 손에 붙는 순간 손 위치에 파티클 폭발.
+  'grab'
 ]);
 
 // 감점 이펙트를 터뜨리는 실패 이벤트들. 폭탄은 화면 흔들림도 동반한다.

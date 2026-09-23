@@ -1,5 +1,5 @@
 import type { PoseFrame } from '../../pose/types';
-import { bodyCenterX } from '../../pose/geometry';
+import { bodyCenterX, palmOf } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawBar, drawLabel } from '../../ui/renderer';
@@ -8,36 +8,42 @@ export type RecycleKind = 'plastic' | 'can';
 
 export interface RecycleItem {
   kind: RecycleKind;
+  x: number;
   y: number;
   alive: boolean;
 }
 
-// 성공까지 버티는 시간(ms). 화면 안내·진행바와 같은 값을 쓴다.
-export const RECYCLE_HOLD_MS = 500;
-// 하늘에서 떨어지는 물건 한 변(px). 기존 64에서 키워 멀리서도 잘 보이게 한다.
-export const RECYCLE_ITEM_SIZE = 92;
+// 손이 쓰레기에 닿았다고 인정하는 반경(px). 별잡기 스트레칭과 같은 기준.
+export const RECYCLE_GRAB_R = 56;
+// 들고 통 자리에서 버티면 성공으로 인정하는 시간(ms). 화면 안내·진행바와 같은 값.
+export const RECYCLE_BIN_HOLD_MS = 500;
 // 결과 문구를 화면에 남기는 시간(ms).
 export const RECYCLE_RESULT_MS = 1200;
-// 물건이 처음 나오는 높이. 상단 안내 글자와 겹치지 않게 아래에서 시작한다.
-export const RECYCLE_SPAWN_Y = 200;
+// 손에 들고 다니는 물건 한 변(px). 멀리서도 잘 보이게 크게 그린다.
+export const RECYCLE_ITEM_SIZE = 92;
 
-// 분리수거 스트레칭: 몸을 기울여 왼쪽 플라스틱·오른쪽 캔으로 분류. 환경교육.
+// 분리수거 스트레칭: 가운데 바닥 쓰레기를 손으로 주워 올바른 통으로 옮기기. 환경교육.
+// 왼손·오른손 어느 쪽으로 가져가도 손에 붙어서 따라다닌다.
 export class RecycleSort implements Game {
   id = 'recycle';
-  // 상단 안내 글자·떨어지는 물건 시인성을 위해 얼굴 마스크를 그리지 않는다 (수학·ABC와 동일).
+  // 상단 안내 글자·쓰레기 시인성을 위해 얼굴 마스크를 그리지 않는다 (수학·ABC와 동일).
   hideFace = true;
-  item: RecycleItem = { kind: 'plastic', y: RECYCLE_SPAWN_Y, alive: true };
+  item: RecycleItem = { kind: 'plastic', x: 320, y: 300, alive: true };
+  // 쓰레기를 들고 있는 손. null이면 바닥에 놓인 상태.
+  carriedBy: 'left' | 'right' | null = null;
   board = new ScoreBoard();
   sorted = 0;
   failed = 0;
-  // 화면 그리기용 실시간 상태: 내가 서 있는 구역·성공까지 진행률·마지막 결과.
+  // 화면 그리기용 실시간 상태: 손(또는 몸)이 있는 구역·성공까지 진행률·마지막 결과.
   playerZone: 0 | 1 | 2 = 1;
-  holdMs = 0;
+  binHoldMs = 0;
   lastResult: 'sorted' | 'mixed' | null = null;
   lastLabel = '';
   private lastAgeMs = 0;
   private running = false;
   private qi = 0;
+  private dimW = 640;
+  private dimH = 480;
 
   // 목표 통 구역: 플라스틱은 왼쪽(0), 캔은 오른쪽(2).
   get targetZone(): 0 | 2 {
@@ -49,7 +55,7 @@ export class RecycleSort implements Game {
   }
 
   get holdProgress(): number {
-    return Math.min(1, this.holdMs / RECYCLE_HOLD_MS);
+    return Math.min(1, this.binHoldMs / RECYCLE_BIN_HOLD_MS);
   }
 
   start(): void {
@@ -58,8 +64,9 @@ export class RecycleSort implements Game {
     this.sorted = 0;
     this.failed = 0;
     this.qi = 0;
-    this.item = { kind: 'plastic', y: RECYCLE_SPAWN_Y, alive: true };
-    this.holdMs = 0;
+    this.dimW = 640;
+    this.dimH = 480;
+    this.spawn();
     this.playerZone = 1;
     this.lastResult = null;
     this.lastLabel = '';
@@ -68,17 +75,32 @@ export class RecycleSort implements Game {
   stop(): void {
     this.running = false;
   }
+
+  // 다음 쓰레기를 가운데 바닥에 내놓는다.
+  private spawn(): void {
+    const kind = this.qi % 2 === 0 ? 'plastic' : 'can';
+    this.item = { kind, x: this.dimW / 2, y: this.dimH - 180, alive: true };
+    this.carriedBy = null;
+    this.binHoldMs = 0;
+  }
+
+  private next(): void {
+    this.qi += 1;
+    this.spawn();
+  }
+
   draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     const binW = 160;
     const binH = 112;
     const target = this.targetZone;
     const isPlastic = this.item.kind === 'plastic';
+    const carried = this.carriedBy !== null;
 
     // 1) 구역 밑바탕: 목표 통이 있는 쪽을 초록·파랑 빛으로 비춘다.
     ctx.save();
     ctx.fillStyle = isPlastic ? 'rgba(61, 158, 87, 0.20)' : 'rgba(59, 130, 196, 0.20)';
     ctx.fillRect(target === 0 ? 0 : (width * 2) / 3, 0, width / 3, height);
-    // 내가 서 있는 구역은 노랑(성공이면 초록, 실패면 빨강)으로 덧씌운다.
+    // 손(또는 몸)이 있는 구역은 노랑(성공이면 초록, 실패면 빨강)으로 덧씌운다.
     const standing =
       this.playerZone === target
         ? 'rgba(61, 158, 87, 0.22)'
@@ -110,18 +132,29 @@ export class RecycleSort implements Game {
     }
     ctx.restore();
 
-    // 3) 상단 안내: 결과 개수·목표 통·성공 기준을 화면에 직접 보여준다.
+    // 3) 상단 안내: 결과 개수·다음 행동·성공 기준을 화면에 직접 보여준다.
     drawLabel(ctx, `${this.sorted}개 분류 · 실수 ${this.failed}회`, width / 2, 34, 30);
-    drawLabel(
-      ctx,
-      isPlastic ? '플라스틱은 왼쪽 통!' : '캔은 오른쪽 통!',
-      width / 2,
-      78,
-      38
-    );
-    drawLabel(ctx, '통 자리에서 0.5초 버티면 성공 · 반대쪽은 실패', width / 2, 116, 22);
-    // 성공까지 진행바: 목표 자리에 서 있을 때만 차오른다.
-    const inSide = this.playerZone !== 1;
+    if (carried) {
+      drawLabel(
+        ctx,
+        isPlastic ? '플라스틱은 왼쪽 통!' : '캔은 오른쪽 통!',
+        width / 2,
+        78,
+        38
+      );
+      drawLabel(ctx, '통 자리에서 0.5초 버티면 성공 · 반대쪽은 실패', width / 2, 116, 22);
+    } else {
+      drawLabel(
+        ctx,
+        isPlastic ? '플라스틱을 손으로 잡으세요!' : '캔을 손으로 잡으세요!',
+        width / 2,
+        78,
+        38
+      );
+      drawLabel(ctx, '쓰레기에 손을 가져가면 손에 붙어요 (양손 모두 가능)', width / 2, 116, 22);
+    }
+    // 성공까지 진행바: 들고 통 자리에 서 있을 때만 차오른다.
+    const inSide = carried && this.playerZone !== 1;
     drawBar(
       ctx,
       width / 2 - 110,
@@ -159,16 +192,27 @@ export class RecycleSort implements Game {
     }
     if (this.item.alive) {
       const half = RECYCLE_ITEM_SIZE / 2;
+      // 아직 손에 안 붙었으면 잡는 범위를 점선 동그라미로 보여준다.
+      if (!carried) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.arc(this.item.x, this.item.y, RECYCLE_GRAB_R, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.save();
       ctx.fillStyle = this.targetColor;
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = carried ? 6 : 4;
       ctx.beginPath();
-      ctx.roundRect(width / 2 - half, this.item.y - half, RECYCLE_ITEM_SIZE, RECYCLE_ITEM_SIZE, 16);
+      ctx.roundRect(this.item.x - half, this.item.y - half, RECYCLE_ITEM_SIZE, RECYCLE_ITEM_SIZE, 16);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
-      drawLabel(ctx, isPlastic ? '플' : '캔', width / 2, this.item.y, 42);
+      drawLabel(ctx, isPlastic ? '플' : '캔', this.item.x, this.item.y, 42);
     }
     // 4) 마지막 결과 알림: 통 위쪽에 성공(초록)·실패(빨강) 띠로 잠시 남긴다.
     if (this.lastResult && this.lastAgeMs < RECYCLE_RESULT_MS) {
@@ -194,11 +238,6 @@ export class RecycleSort implements Game {
     if (x < (width * 2) / 3) return 1;
     return 2;
   }
-  private next(): void {
-    this.qi += 1;
-    this.item = { kind: this.qi % 2 === 0 ? 'plastic' : 'can', y: RECYCLE_SPAWN_Y, alive: true };
-    this.holdMs = 0;
-  }
   private remember(result: 'sorted' | 'mixed', label: string): void {
     this.lastResult = result;
     this.lastLabel = label;
@@ -213,17 +252,66 @@ export class RecycleSort implements Game {
       }
     }
     if (!this.running || !this.item.alive) return [];
-    this.item.y += 140 * (dtMs / 1000);
-    const zone = this.zoneOf(bodyCenterX(frame), frame.width);
-    this.playerZone = zone;
-    const want: 0 | 2 = this.item.kind === 'plastic' ? 0 : 2;
-    const wrong: 0 | 2 = this.item.kind === 'plastic' ? 2 : 0;
-    if (zone !== want && zone !== wrong) {
-      this.holdMs = 0;
+    this.dimW = frame.width;
+    this.dimH = frame.height;
+    const palms: { side: 'left' | 'right'; x: number; y: number }[] = [];
+    for (const side of ['left', 'right'] as const) {
+      const p = palmOf(frame, side);
+      if (p) palms.push({ side, x: p.x, y: p.y });
+    }
+
+    // 들고 있는 중: 손을 따라다닌다.
+    if (this.carriedBy !== null) {
+      const hand = palms.find((p) => p.side === this.carriedBy);
+      if (hand) {
+        this.item.x = hand.x;
+        this.item.y = hand.y;
+        const zone = this.zoneOf(hand.x, frame.width);
+        this.playerZone = zone;
+        if (zone !== 0 && zone !== 2) {
+          this.binHoldMs = 0;
+          return [];
+        }
+        this.binHoldMs += dtMs;
+        if (this.binHoldMs <= RECYCLE_BIN_HOLD_MS) return [];
+        return this.judge(zone);
+      }
+      // 든 손이 사라지면: 다른 손이 쓰레기 근처에 있으면 이어서 들기.
+      const other = palms.find(
+        (p) => Math.hypot(p.x - this.item.x, p.y - this.item.y) <= RECYCLE_GRAB_R
+      );
+      if (other) {
+        this.carriedBy = other.side;
+        this.binHoldMs = 0;
+        return [];
+      }
+      // 양손 다 없으면 그 자리에 내려놓고 기다린다.
+      this.carriedBy = null;
+      this.binHoldMs = 0;
       return [];
     }
-    this.holdMs += dtMs;
-    if (this.holdMs <= RECYCLE_HOLD_MS) return [];
+
+    // 바닥에 놓인 상태: 손이 닿으면(가까운 손) 손에 붙는다.
+    let best: { side: 'left' | 'right' } | null = null;
+    let bestDist = RECYCLE_GRAB_R;
+    for (const p of palms) {
+      const d = Math.hypot(p.x - this.item.x, p.y - this.item.y);
+      if (d <= bestDist) {
+        bestDist = d;
+        best = { side: p.side };
+      }
+    }
+    this.playerZone = this.zoneOf(bodyCenterX(frame), frame.width);
+    if (!best) return [];
+    this.carriedBy = best.side;
+    this.binHoldMs = 0;
+    const label = this.item.kind === 'plastic' ? '플라스틱 잡았어요!' : '캔 잡았어요!';
+    return [{ type: 'grab', points: 0, label }];
+  }
+
+  // 들고 통 자리에 0.5초 머물렀을 때 성공·실패를 가른다.
+  private judge(zone: 0 | 2): GameEvent[] {
+    const want: 0 | 2 = this.item.kind === 'plastic' ? 0 : 2;
     this.item.alive = false;
     if (zone === want) {
       this.sorted += 1;
