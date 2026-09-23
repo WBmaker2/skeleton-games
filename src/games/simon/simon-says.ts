@@ -9,6 +9,8 @@ export type SimonCmd = DanceMove;
 // 사이먼 AI 선생님: 지시를 듣고 포즈로 답하기. 듣기·반응.
 export class SimonSays implements Game {
   id = 'simon';
+  // 상단에 지시 텍스트가 나오므로 얼굴 마스크를 그리지 않는다 (시인성).
+  hideFace = true;
   commands: SimonCmd[] = ['left', 'right', 'both', 'down', 'right', 'left'];
   command: SimonCmd = 'left';
   board = new ScoreBoard();
