@@ -77,8 +77,9 @@ export class YogaMirror implements Game {
     drawBar(ctx, width / 2 - 130, 110, 260, 14, this.progress, '#3d9e57');
     // 따라할 자세 스켈레톤 예시: 오른쪽 위 패널에 막대인간 가이드를 함께 보여준다.
     // 글자만으로는 팔 모양을 알기 어려우니, 코드로 그리는 벡터 가이드로 보완한다.
+    // 패널 아래에는 다리 조건(모음/벌림)도 함께 표시한다.
     const gw = 140;
-    const gh = 180;
+    const gh = 200;
     const gx = Math.max(8, width - gw - 16);
     drawYogaGuide(ctx, this.pose.name, gx, 16, gw, gh, `${this.pose.name} 자세`);
   }

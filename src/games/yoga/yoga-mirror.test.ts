@@ -156,6 +156,9 @@ describe('YogaMirror', () => {
       // 막대인간 머리(arc 1회 이상) + 자세 글자(상단 큰 글자·가이드 하단 글자)가 그려져야 함
       expect(arcs).toBeGreaterThanOrEqual(1);
       expect(texts.some((a) => String(a[0]).includes(pose))).toBe(true);
+      // 다리 조건 글자: 전사·삼각은 벌림, 나머지는 모음 (판정 기준과 일치)
+      const legsText = pose === '전사' || pose === '삼각' ? '다리 벌림' : '다리 모음';
+      expect(texts.some((a) => a[0] === legsText)).toBe(true);
     }
   });
 });

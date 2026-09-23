@@ -433,7 +433,7 @@ export function drawYogaGuide(
 
   const padX = 12;
   const top = y + 12;
-  const bottom = y + h - 40;
+  const bottom = y + h - 60;
   const px = (fx: number): number => x + padX + fx * (w - padX * 2);
   const py = (fy: number): number => top + fy * Math.max(1, bottom - top);
 
@@ -442,18 +442,19 @@ export function drawYogaGuide(
   const hip = { x: 0.5, y: 0.6 };
   const shoulderL = { x: 0.42, y: 0.33 };
   const shoulderR = { x: 0.58, y: 0.33 };
-  // 다리 모양: 모은 다리(기둥)와 벌린 다리(전사·삼각)를 쓴다. 판정 조건과 일치한다.
+  // 다리 모양: 판정 기준(모음=발 모음, 벌림=어깨너비 1.3배 이상)과 일치하게 과장한다.
+  // 모음은 발을 거의 붙이고, 벌림은 패널 끝까지 벌려서 한눈에 구별되게 한다.
   const legsTogether = {
-    kneeL: { x: 0.42, y: 0.79 },
-    kneeR: { x: 0.58, y: 0.79 },
-    footL: { x: 0.36, y: 0.96 },
-    footR: { x: 0.64, y: 0.96 }
+    kneeL: { x: 0.46, y: 0.79 },
+    kneeR: { x: 0.54, y: 0.79 },
+    footL: { x: 0.465, y: 0.96 },
+    footR: { x: 0.535, y: 0.96 }
   };
   const legsOpen = {
-    kneeL: { x: 0.28, y: 0.78 },
-    kneeR: { x: 0.72, y: 0.78 },
-    footL: { x: 0.16, y: 0.95 },
-    footR: { x: 0.84, y: 0.95 }
+    kneeL: { x: 0.24, y: 0.78 },
+    kneeR: { x: 0.76, y: 0.78 },
+    footL: { x: 0.1, y: 0.95 },
+    footR: { x: 0.9, y: 0.95 }
   };
   // YOGA_POSES 템플릿과 일치: 산=내림, 전사=T자, 만세=V자, 합장=가슴모음, 삼각=한팔위, 나무=머리위모음.
   const downL = { elbow: { x: 0.4, y: 0.46 }, hand: { x: 0.38, y: 0.6 } };
@@ -503,6 +504,15 @@ export function drawYogaGuide(
   seg(kneeL.x, kneeL.y, footL.x, footL.y);
   seg(hip.x, hip.y, kneeR.x, kneeR.y);
   seg(kneeR.x, kneeR.y, footR.x, footR.y);
+  // 바닥선: 발이 닿는 기준선으로 다리 벌림 폭을 읽기 쉽게 한다.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(px(0.06), py(0.985));
+  ctx.lineTo(px(0.94), py(0.985));
+  ctx.stroke();
+  ctx.restore();
   // 팔 (자세별: 따라할 손은 노랑 하이라이트)
   seg(shoulderL.x, shoulderL.y, arms.elbowL.x, arms.elbowL.y);
   seg(arms.elbowL.x, arms.elbowL.y, arms.handL.x, arms.handL.y);
@@ -525,8 +535,11 @@ export function drawYogaGuide(
   ctx.fill();
   ctx.restore();
 
-  // 패널 하단 자세 글자 (drawLabel이 미러를 자체 보정).
-  drawLabel(ctx, label ?? pose, x + w / 2, y + h - 20, 26);
+  // 패널 하단 글자 (drawLabel이 미러를 자체 보정).
+  // 자세 이름 아래에 다리 조건을 작게 함께 적어 모음/벌림을 글로도 알려준다.
+  const legsLabel = arms.legs === legsOpen ? '다리 벌림' : '다리 모음';
+  drawLabel(ctx, label ?? pose, x + w / 2, y + h - 36, 24);
+  drawLabel(ctx, legsLabel, x + w / 2, y + h - 13, 18);
 }
 
 // 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 × scale 크기.
