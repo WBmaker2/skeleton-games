@@ -41,7 +41,7 @@ export class RecycleSort implements Game {
   lastLabel = '';
   private lastAgeMs = 0;
   private running = false;
-  private qi = 0;
+  private seed = 1;
   private dimW = 640;
   private dimH = 480;
 
@@ -63,7 +63,7 @@ export class RecycleSort implements Game {
     this.board.reset();
     this.sorted = 0;
     this.failed = 0;
-    this.qi = 0;
+    this.seed = 1;
     this.dimW = 640;
     this.dimH = 480;
     this.spawn();
@@ -76,16 +76,25 @@ export class RecycleSort implements Game {
     this.running = false;
   }
 
-  // 다음 쓰레기를 가운데 바닥에 내놓는다.
+  // 게임 내 난수 생성기 (별잡기 스트레칭과 같은 LCG, 테스트 재현 가능).
+  private rnd(): number {
+    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
+    return this.seed / 0x7fffffff;
+  }
+
+  // 다음 쓰레기를 가운데 구역 바닥에 랜덤으로 내놓는다.
+  // 종류도 번갈아가 아닌 랜덤이라 매번 통을 확인해야 한다.
   private spawn(): void {
-    const kind = this.qi % 2 === 0 ? 'plastic' : 'can';
-    this.item = { kind, x: this.dimW / 2, y: this.dimH - 180, alive: true };
+    const kind: RecycleKind = this.rnd() < 0.5 ? 'plastic' : 'can';
+    const margin = 60;
+    const x = this.dimW / 3 + margin + this.rnd() * Math.max(1, this.dimW / 3 - margin * 2);
+    const y = this.dimH - 180 - this.rnd() * 60;
+    this.item = { kind, x, y, alive: true };
     this.carriedBy = null;
     this.binHoldMs = 0;
   }
 
   private next(): void {
-    this.qi += 1;
     this.spawn();
   }
 
