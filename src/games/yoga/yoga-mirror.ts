@@ -30,7 +30,8 @@ export const YOGA_SIM_THRESHOLD = 0.6;
 //  - 삼각: 한 팔 위+한 팔 아래+다리 벌림 (좌우 어느 쪽이든 인정)
 //  - 나무: 양손 머리 위 모음+다리 모음 (브륵사사나 팔 모양)
 export const YOGA_POSES: YogaPose[] = [
-  { name: '산', angles: { leftArm: 15, rightArm: 15, torso: 90 }, hand: 'apart', legs: 'together' },
+  // 산은 다리를 보지 않는다 (차렷이면 되며, 전사·삼각 뒤에 발을 벌린 채로 있어도 통과).
+  { name: '산', angles: { leftArm: 15, rightArm: 15, torso: 90 }, hand: 'apart' },
   { name: '전사', angles: { leftArm: 90, rightArm: 90, torso: 90 }, legs: 'apart' },
   { name: '만세', angles: { leftArm: 135, rightArm: 135, torso: 90 }, hand: 'apart', legs: 'together' },
   { name: '합장', angles: { leftArm: 50, rightArm: 50, torso: 90 }, hand: 'together', legs: 'together' },

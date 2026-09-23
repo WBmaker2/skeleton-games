@@ -101,6 +101,20 @@ describe('YogaMirror', () => {
     for (let i = 0; i < 50; i++) g.tick(sloppy, 16);
     expect(g.progress).toBeGreaterThan(0);
   });
+  it('passes mountain with feet apart (no legs condition)', () => {
+    // 전사·삼각 뒤에 발을 벌린 채로 산을 해도 통과해야 함 (두 번째 산 실패 재발 방지).
+    const g = new YogaMirror();
+    g.start();
+    expect(g.pose.name).toBe('산');
+    const feetApart = frame([
+      ...shoulders(), kp('left_wrist', 250, 200), kp('right_wrist', 390, 200),
+      kp('left_ankle', 255, 300), kp('right_ankle', 385, 300)
+    ]);
+    const seen: string[] = [];
+    for (let i = 0; i < 200; i++) seen.push(...g.tick(feetApart, 16).map((e) => e.type));
+    expect(seen).toContain('pose-done');
+    expect(g.pose.name).toBe('전사');
+  });
   it('resets hold when pose breaks', () => {
     const g = new YogaMirror();
     g.start();
@@ -156,8 +170,8 @@ describe('YogaMirror', () => {
       // 막대인간 머리(arc 1회 이상) + 자세 글자(상단 큰 글자·가이드 하단 글자)가 그려져야 함
       expect(arcs).toBeGreaterThanOrEqual(1);
       expect(texts.some((a) => String(a[0]).includes(pose))).toBe(true);
-      // 다리 조건 글자: 전사·삼각은 벌림, 나머지는 모음 (판정 기준과 일치)
-      const legsText = pose === '전사' || pose === '삼각' ? '다리 벌림' : '다리 모음';
+      // 다리 조건 글자: 전사·삼각은 벌림, 산은 자유, 나머지는 모음 (판정 기준과 일치)
+      const legsText = pose === '전사' || pose === '삼각' ? '다리 벌림' : pose === '산' ? '다리 자유' : '다리 모음';
       expect(texts.some((a) => a[0] === legsText)).toBe(true);
     }
   });

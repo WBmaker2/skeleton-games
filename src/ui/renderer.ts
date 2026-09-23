@@ -456,6 +456,13 @@ export function drawYogaGuide(
     footL: { x: 0.1, y: 0.95 },
     footR: { x: 0.9, y: 0.95 }
   };
+  // 다리 자유(산): 판정을 보지 않으므로 자연스러운 어깨너비로 선다.
+  const legsFree = {
+    kneeL: { x: 0.44, y: 0.79 },
+    kneeR: { x: 0.56, y: 0.79 },
+    footL: { x: 0.4, y: 0.96 },
+    footR: { x: 0.6, y: 0.96 }
+  };
   // YOGA_POSES 템플릿과 일치: 산=내림, 전사=T자, 만세=V자, 합장=가슴모음, 삼각=한팔위, 나무=머리위모음.
   const downL = { elbow: { x: 0.4, y: 0.46 }, hand: { x: 0.38, y: 0.6 } };
   const downR = { elbow: { x: 0.6, y: 0.46 }, hand: { x: 0.62, y: 0.6 } };
@@ -471,13 +478,14 @@ export function drawYogaGuide(
     elbowL: { x: number; y: number }; handL: { x: number; y: number };
     elbowR: { x: number; y: number }; handR: { x: number; y: number };
     legs: typeof legsTogether; hot: ('L' | 'R')[];
+    legsLabel: '다리 모음' | '다리 벌림' | '다리 자유';
   }> = {
-    산: { elbowL: downL.elbow, handL: downL.hand, elbowR: downR.elbow, handR: downR.hand, legs: legsTogether, hot: [] },
-    전사: { elbowL: tL.elbow, handL: tL.hand, elbowR: tR.elbow, handR: tR.hand, legs: legsOpen, hot: ['L', 'R'] },
-    만세: { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, legs: legsTogether, hot: ['L', 'R'] },
-    합장: { elbowL: clapL.elbow, handL: clapL.hand, elbowR: clapR.elbow, handR: clapR.hand, legs: legsTogether, hot: ['L', 'R'] },
-    삼각: { elbowL: upL.elbow, handL: upL.hand, elbowR: downR.elbow, handR: downR.hand, legs: legsOpen, hot: ['L'] },
-    나무: { elbowL: overL.elbow, handL: overL.hand, elbowR: overR.elbow, handR: overR.hand, legs: legsTogether, hot: ['L', 'R'] }
+    산: { elbowL: downL.elbow, handL: downL.hand, elbowR: downR.elbow, handR: downR.hand, legs: legsFree, hot: [], legsLabel: '다리 자유' },
+    전사: { elbowL: tL.elbow, handL: tL.hand, elbowR: tR.elbow, handR: tR.hand, legs: legsOpen, hot: ['L', 'R'], legsLabel: '다리 벌림' },
+    만세: { elbowL: upL.elbow, handL: upL.hand, elbowR: upR.elbow, handR: upR.hand, legs: legsTogether, hot: ['L', 'R'], legsLabel: '다리 모음' },
+    합장: { elbowL: clapL.elbow, handL: clapL.hand, elbowR: clapR.elbow, handR: clapR.hand, legs: legsTogether, hot: ['L', 'R'], legsLabel: '다리 모음' },
+    삼각: { elbowL: upL.elbow, handL: upL.hand, elbowR: downR.elbow, handR: downR.hand, legs: legsOpen, hot: ['L'], legsLabel: '다리 벌림' },
+    나무: { elbowL: overL.elbow, handL: overL.hand, elbowR: overR.elbow, handR: overR.hand, legs: legsTogether, hot: ['L', 'R'], legsLabel: '다리 모음' }
   };
   const arms = POSES[pose];
   const { kneeL, kneeR, footL, footR } = arms.legs;
@@ -537,9 +545,8 @@ export function drawYogaGuide(
 
   // 패널 하단 글자 (drawLabel이 미러를 자체 보정).
   // 자세 이름 아래에 다리 조건을 작게 함께 적어 모음/벌림을 글로도 알려준다.
-  const legsLabel = arms.legs === legsOpen ? '다리 벌림' : '다리 모음';
   drawLabel(ctx, label ?? pose, x + w / 2, y + h - 36, 24);
-  drawLabel(ctx, legsLabel, x + w / 2, y + h - 13, 18);
+  drawLabel(ctx, arms.legsLabel, x + w / 2, y + h - 13, 18);
 }
 
 // 얼굴 마스크 오버레이: 코 앵커, 어깨너비 × 1.4 × scale 크기.
