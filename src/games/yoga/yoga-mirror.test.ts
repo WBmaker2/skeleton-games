@@ -90,6 +90,17 @@ describe('YogaMirror', () => {
     for (let i = 0; i < 200; i++) seen.push(...g.tick(triangleMirror, 16).map((e) => e.type));
     expect(seen).toContain('pose-done');
   });
+  it('accepts a slightly sloppy pose (lenient threshold)', () => {
+    const g = new YogaMirror();
+    g.start();
+    // 팔 ~45°로 삐뚤빼뚤한 산 자세 (템플릿과 30° 차이, 유사도 0.67).
+    // 예전 0.7에서는 탈락, 완화된 0.6에서는 인정.
+    const sloppy = frame([
+      ...shoulders(), kp('left_wrist', 220, 170), kp('right_wrist', 420, 170), ...anklesTogether()
+    ]);
+    for (let i = 0; i < 50; i++) g.tick(sloppy, 16);
+    expect(g.progress).toBeGreaterThan(0);
+  });
   it('resets hold when pose breaks', () => {
     const g = new YogaMirror();
     g.start();
