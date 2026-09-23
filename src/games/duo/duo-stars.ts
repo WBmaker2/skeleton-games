@@ -7,6 +7,8 @@ import { drawStar } from '../../ui/renderer';
 // 2인 별자리: 양손으로 두 별을 동시에 0.8초 잡기. 협동 (혼자서도 가능).
 export class DuoStars implements Game {
   id = 'duo';
+  // 상단 별·점선 시인성을 위해 얼굴 마스크를 그리지 않는다 (별잡기·요가와 동일).
+  hideFace = true;
   starA = { x: 160, y: 140 };
   starB = { x: 480, y: 140 };
   board = new ScoreBoard();
@@ -48,9 +50,18 @@ export class DuoStars implements Game {
     }
     const lw = palmOf(frame, 'left');
     const rw = palmOf(frame, 'right');
-    const ok = (w: typeof lw, s: { x: number; y: number }): boolean =>
-      !!w && Math.hypot(w.x - s.x, w.y - s.y) < 64;
-    if (!ok(lw, this.starA) || !ok(rw, this.starB)) {
+    // 판정 반경: 화면 너비의 10% (640px 기준 64px, 1280px 기준 128px).
+    // 고정 64px이면 넓은 화면에서 상대적으로 까다로워져 겹쳐 보여도 실패한다.
+    const radius = frame.width * 0.1;
+    const near = (w: typeof lw, s: { x: number; y: number }): boolean =>
+      !!w && Math.hypot(w.x - s.x, w.y - s.y) < radius;
+    // 화면은 셀카 미러(CSS scaleX(-1))로 보이므로 비트맵 왼쪽 별이 화면 오른쪽에 보인다.
+    // 사용자가 화면에서 왼쪽 별에 왼손을 올리면 비트맵에서는 반대쪽이 된다.
+    // 그래서 왼손→왼쪽별·오른손→오른쪽별 고정 대신, 어느 손이 어느 별이어도
+    // 두 별이 각각 다른 손으로 동시에 덮이면 성공으로 인정한다.
+    const straight = near(lw, this.starA) && near(rw, this.starB);
+    const swapped = near(lw, this.starB) && near(rw, this.starA);
+    if (!straight && !swapped) {
       this.holdMs = 0;
       return [];
     }
