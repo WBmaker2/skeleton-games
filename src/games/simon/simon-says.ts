@@ -1,10 +1,26 @@
 import type { PoseFrame } from '../../pose/types';
+import { getByName } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { wristPattern, MOVE_KR, type DanceMove } from '../dance';
 import { drawBar, drawLabel } from '../../ui/renderer';
 
 export type SimonCmd = DanceMove;
+
+// 양손 완화 판정 (사이먼 전용): 사이먼은 4종 지시(왼손·오른손·양손·내리기)만 쓴다.
+// 댄스 10종 분류의 간격 조건(동그라미·Y자세)과 무관하게,
+// 양쪽 손목이 각자 어깨보다 10px 이상 위에 있으면 양손 성공으로 인정한다.
+// 공유 판정(wristPattern)·댄스 게임 동작은 그대로 둔다.
+
+function bothUp(frame: PoseFrame): boolean {
+  const lw = getByName(frame, 'left_wrist');
+  const rw = getByName(frame, 'right_wrist');
+  const ls = getByName(frame, 'left_shoulder');
+  const rs = getByName(frame, 'right_shoulder');
+  const raised = (w: typeof lw, s: typeof ls): boolean =>
+    !!w && !!s && (w.score ?? 0) > 0.3 && (s.score ?? 0) > 0.3 && w.y < s.y - 10;
+  return raised(lw, ls) && raised(rw, rs);
+}
 
 // 사이먼 AI 선생님: 지시를 듣고 포즈로 답하기. 듣기·반응.
 export class SimonSays implements Game {
@@ -40,7 +56,8 @@ export class SimonSays implements Game {
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running) return [];
-    if (wristPattern(frame) === this.command) {
+    const pattern = wristPattern(frame);
+    if (pattern === this.command || (this.command === 'both' && bothUp(frame))) {
       this.solved += 1;
       this.board.comboHit();
       this.board.add(15);
