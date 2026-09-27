@@ -55,8 +55,9 @@ export async function countdownCalibration(
   const frames: PoseFrame[] = [];
   const dummy = video ?? document.createElement('video');
   const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
-  const endAt = Date.now() + beats.length * stepMs + goMs;
-  let beat = 0;
+  const totalMs = beats.length * stepMs;
+  const startAt = Date.now();
+  const endAt = startAt + totalMs + goMs;
   msg.innerHTML = '';
   const num = document.createElement('div');
   num.className = 'count-num';
@@ -64,12 +65,14 @@ export async function countdownCalibration(
   sub.textContent = 'T자세로 서서 준비하세요';
   msg.append(num, sub);
   while (Date.now() < endAt && !skipped()) {
-    const remain = endAt - Date.now();
-    const label = remain <= goMs ? '시작!' : String(beats[Math.min(beat, beats.length - 1)]);
-    if (num.textContent !== label) {
-      num.textContent = label;
-      beat += 1;
-    }
+    // 보여줄 숫자는 경과 시간으로 정한다: 각 숫자가 정확히 1스텝(stepMs)씩 유지된다.
+    // (이전에는 바뀔 때마다 다음 숫자로 넘겨 5·4·3·2·1이 순식간에 지나갔다.)
+    const elapsed = Date.now() - startAt;
+    const label =
+      elapsed < totalMs
+        ? String(beats[Math.min(Math.floor(elapsed / stepMs), beats.length - 1)])
+        : '시작!';
+    if (num.textContent !== label) num.textContent = label;
     try {
       frames.push(await engine.estimate(dummy));
     } catch {
