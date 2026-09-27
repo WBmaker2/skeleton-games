@@ -39,6 +39,8 @@ export interface Mole {
   riseMs: number;
   visibleMs: number;
   fallMs: number;
+  // 타격당한 순간의 올라온 정도. 맞은 표정으로 내려갈 때 점프하지 않고 이어서 내려간다.
+  hitP: number;
 }
 
 interface HandState {
@@ -83,7 +85,8 @@ export class MoleWhack implements Game {
       tMs: 0,
       riseMs: MOLE_RISE_START_MS,
       visibleMs: MOLE_VISIBLE_START_MS,
-      fallMs: MOLE_RISE_START_MS
+      fallMs: MOLE_RISE_START_MS,
+      hitP: 1
     }));
     this.hands = {
       left: { armed: false, prevX: null, prevY: null, vy: 0 },
@@ -137,12 +140,12 @@ export class MoleWhack implements Game {
     return height - 70;
   }
 
-  // 두더지가 올라온 정도 0(숨음)~1(완전 출현).
+  // 두더지가 올라온 정도 0(숨음)~1(완전 출현). 맞은 뒤에는 맞은 높이에서 이어서 내려간다.
   progressOf(m: Mole): number {
     if (m.phase === 'rising') return Math.min(1, m.tMs / Math.max(1, m.riseMs));
     if (m.phase === 'visible') return 1;
     if (m.phase === 'falling') return Math.max(0, 1 - m.tMs / Math.max(1, m.fallMs));
-    if (m.phase === 'hit') return Math.max(0, 1 - m.tMs / MOLE_HIT_MS);
+    if (m.phase === 'hit') return Math.max(0, m.hitP * (1 - m.tMs / MOLE_HIT_MS));
     return 0;
   }
 
@@ -224,14 +227,16 @@ export class MoleWhack implements Game {
         m.phase = 'visible';
         m.tMs = 0;
       } else if (m.phase === 'visible' && m.tMs >= m.visibleMs) {
+        // 내려가기 시작: 아직 놓친 게 아니다. 완전히 내려가기 전에 맞히면 득점 인정.
         m.phase = 'falling';
+        m.tMs = 0;
+      } else if (m.phase === 'falling' && m.tMs >= m.fallMs) {
+        // 완전히 퇴장했는데도 못 잡았을 때만 놓침.
+        m.phase = 'hidden';
         m.tMs = 0;
         this.missed += 1;
         this.board.comboMiss();
         events.push({ type: 'miss', points: 0, label: '두더지를 놓쳤어요' });
-      } else if (m.phase === 'falling' && m.tMs >= m.fallMs) {
-        m.phase = 'hidden';
-        m.tMs = 0;
       } else if (m.phase === 'hit' && m.tMs >= MOLE_HIT_MS) {
         m.phase = 'hidden';
         m.tMs = 0;
@@ -258,7 +263,8 @@ export class MoleWhack implements Game {
       let best: Mole | null = null;
       let bestDist = MOLE_HIT_R;
       for (const m of this.moles) {
-        if (m.phase !== 'visible') continue;
+        // 올라와 있을 때뿐 아니라 내려가는 도중에도 판정 반경 안이면 맞힐 수 있다.
+        if (m.phase !== 'visible' && m.phase !== 'falling') continue;
         const head = this.headPos(m.slot, frame.width, frame.height, this.progressOf(m));
         const d = Math.hypot(p.x - head.x, p.y - head.y);
         if (d <= bestDist) {
@@ -267,6 +273,7 @@ export class MoleWhack implements Game {
         }
       }
       if (!best) continue;
+      best.hitP = this.progressOf(best);
       best.phase = 'hit';
       best.tMs = 0;
       st.armed = false;
@@ -296,7 +303,7 @@ export class MoleWhack implements Game {
     for (let slot = 0; slot < MOLE_SLOTS; slot++) {
       const x = this.slotX(slot, width);
       const m = this.moles[slot];
-      const hittable = m && (m.phase === 'rising' || m.phase === 'visible');
+      const hittable = m && (m.phase === 'rising' || m.phase === 'visible' || m.phase === 'falling');
       this.drawHole(ctx, x, hy, width, hittable && !reduced);
       if (m && m.phase !== 'hidden') {
         // 구멍 위로만 보이게 클립: 아래에 묻힌 몸통은 잘라낸다.

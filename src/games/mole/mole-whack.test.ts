@@ -78,16 +78,37 @@ describe('MoleWhack spawning', () => {
     }
     expect(new Set(seen).size).toBeGreaterThan(1);
   });
-  it('emits miss when a visible mole escapes', () => {
+  it('emits miss only after a mole fully exits', () => {
     const g = new MoleWhack();
     g.start();
     g.forceSpawn(2);
     const types: string[] = [];
-    // 올라와 있는 시간 + 여유만큼 가만히 둔다.
-    for (let i = 0; i < 90; i++) types.push(...g.tick(neutral(), 16).map((e) => e.type));
+    // 올라와 있는 시간(1100ms)이 지나 내려가기 시작해도 아직 놓침이 아니다.
+    for (let i = 0; i < 75; i++) types.push(...g.tick(neutral(), 16).map((e) => e.type));
+    expect(g.moles[2].phase).toBe('falling');
+    expect(types).not.toContain('miss');
+    // 완전히 내려가면 그때 놓침.
+    for (let i = 0; i < 45; i++) types.push(...g.tick(neutral(), 16).map((e) => e.type));
     expect(types).toContain('miss');
     expect(g.missed).toBe(1);
     expect(g.board.combo).toBe(0);
+  });
+  it('scores when hitting a mole while it exits', () => {
+    const g = new MoleWhack();
+    g.start();
+    g.forceSpawn(2);
+    // 내려가는 도중까지 가만히 둔다.
+    for (let i = 0; i < 75; i++) g.tick(neutral(), 16);
+    expect(g.moles[2].phase).toBe('falling');
+    const m = g.moles[2];
+    const head = g.headPos(2, 640, 480, g.progressOf(m));
+    // 손을 올렸다가 내려치는 중의 머리를 맞히면 득점.
+    g.tick(handsFrame(0, 0, head.x, 200 - MOLE_ARM_DY - 10), 16);
+    const now = g.headPos(2, 640, 480, g.progressOf(g.moles[2]));
+    const events = g.tick(handsFrame(0, 0, now.x, now.y), 16);
+    expect(events.map((e) => e.type)).toContain('catch');
+    expect(g.caught).toBe(1);
+    expect(g.missed).toBe(0);
   });
 });
 
