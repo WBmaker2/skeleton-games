@@ -10,6 +10,7 @@ import { simonMeta } from './simon/meta';
 import { yogaMeta } from './yoga/meta';
 import { duoMeta } from './duo/meta';
 import { recycleMeta } from './recycle/meta';
+import { moleMeta } from './mole/meta';
 import type { GameMeta } from './meta';
 
 export type { GameMeta };
@@ -28,5 +29,6 @@ export const GAMEMETAS: GameMeta[] = [
   simonMeta,
   yogaMeta,
   duoMeta,
-  recycleMeta
+  recycleMeta,
+  moleMeta
 ].sort((a, b) => a.no - b.no);

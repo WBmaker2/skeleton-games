@@ -13,12 +13,13 @@ import { SimonSays } from '../games/simon';
 import { YogaMirror } from '../games/yoga';
 import { DuoStars } from '../games/duo';
 import { RecycleSort } from '../games/recycle';
+import { MoleWhack } from '../games/mole';
 
 export type PlayableId = Exclude<GameId, 'home'>;
 export type PlayableGame =
   | FruitNinja | SquatRunner | MathJump | BodyABC
   | StarCatch | BalloonHead | ZombieSteps | RhythmDance
-  | SimonSays | YogaMirror | DuoStars | RecycleSort;
+  | SimonSays | YogaMirror | DuoStars | RecycleSort | MoleWhack;
 
 export function createGame(id: PlayableId): PlayableGame {
   switch (id) {
@@ -33,6 +34,7 @@ export function createGame(id: PlayableId): PlayableGame {
     case 'yoga': return new YogaMirror();
     case 'duo': return new DuoStars();
     case 'recycle': return new RecycleSort();
+    case 'mole': return new MoleWhack();
     default: return new FruitNinja();
   }
 }
