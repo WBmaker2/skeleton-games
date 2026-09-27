@@ -1,6 +1,6 @@
 # 게임 아트 이미지 생성 프롬프트
 
-랜딩페이지 12장의 카드 이미지(`public/art/*.jpg`)를 외부 도구로 만들 때 사용하세요.
+랜딩페이지 13장의 카드 이미지(`public/art/*.jpg`)를 외부 도구로 만들 때 사용하세요.
 다 만들어지면 `public/art/`에 넣고 `npm run build`만 하면 카드에 자동 표시됩니다.
 (파일이 없을 때는 미소 얼굴 플레이스홀더가 대신 보입니다.)
 
@@ -72,12 +72,19 @@
 - a kid placing a bottle into the left bin and a can into the right bin,
   two tidy recycling bins, park background
 
+## 13. public/art/mole-whack.jpg
+
+- a cute smiling brown mole popping out of a round dirt hole in the ground,
+  a happy kid hand playfully reaching down to pat its head,
+  two more empty dirt holes nearby, garden background
+- 실제 생성: 구글 플로우 Nano Banana 2로 생성 (2026-09-27)
+
 ## 배치 확인
 
 - 파일명 오타 주의 ( 코드가 참조하는 경로: `art/fruit-ninja.jpg`,
   `art/squat-runner.jpg`, `art/math-jump.jpg`, `art/body-abc.jpg`,
   `art/star-catch.jpg`, `art/balloon-head.jpg`, `art/zombie-steps.jpg`,
   `art/rhythm-dance.jpg`, `art/simon-says.jpg`, `art/yoga-mirror.jpg`,
-  `art/duo-stars.jpg`, `art/recycle-sort.jpg` )
+  `art/duo-stars.jpg`, `art/recycle-sort.jpg`, `art/mole-whack.jpg` )
 - PNG 권장, 1024px 이상. 넣은 뒤 `npm run dev`로 카드에 뜨는지 확인
 - 대체 텍스트는 `src/ui/landing.ts`의 `artAlt`에 이미 작성되어 있음
