@@ -7,7 +7,7 @@ import type { PlayableId } from './app';
 
 export const BOARD_IDS: PlayableId[] = [
   'fruit', 'squat', 'math', 'abc', 'star', 'balloon',
-  'zombie', 'dance', 'simon', 'yoga', 'duo', 'recycle'
+  'zombie', 'dance', 'simon', 'yoga', 'duo', 'recycle', 'mole'
 ];
 
 function fmtDate(ms?: number): string {

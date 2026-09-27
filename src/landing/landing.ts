@@ -6,7 +6,7 @@ import { adminDotHTML, wireAdminDot } from '../ui/leaderboard';
 import { GAMEMETAS } from '../games';
 
 export interface LandingGame {
-  id: 'fruit' | 'squat' | 'math' | 'abc' | 'star' | 'balloon' | 'zombie' | 'dance' | 'simon' | 'yoga' | 'duo' | 'recycle';
+  id: 'fruit' | 'squat' | 'math' | 'abc' | 'star' | 'balloon' | 'zombie' | 'dance' | 'simon' | 'yoga' | 'duo' | 'recycle' | 'mole';
   no: number;
   name: string;
   rule: string;
