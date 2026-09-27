@@ -149,6 +149,12 @@ export class MoleWhack implements Game {
     return 0;
   }
 
+  // 두더지 몸통 바닥선의 Y좌표. p=0이면 몸 전체가 구멍 아래에 묻히고
+  // (구멍선 클립으로 잘려 안 보임), p=1이면 구멍선에 앉는다.
+  // p가 클수록 위로 이동한다: 등장(rising)은 아래→위, 퇴장(falling·hit)은 위→아래.
+  moleBaseY(holeY: number, size: number, progress: number): number {
+    return holeY + 4 + size * 1.6 * (1 - progress);
+  }
   // 타격 판정점: 올라온 두더지의 얼굴 중심. 그리기(drawMole)와 같은 기준
   // (구멍선 +4px에서 몸통 높이 0.62배 위)으로 맞춰 손이 얼굴을 노리면 맞는다.
   headPos(slot: number, width: number, height: number, progress = 1): { x: number; y: number } {
@@ -313,7 +319,7 @@ export class MoleWhack implements Game {
         ctx.clip();
         const p = this.progressOf(m);
         const size = this.moleSize(width);
-        drawMole(ctx, x, hy + 4 - (size * 1.3 + 6) * (1 - p), size, m.phase === 'hit');
+        drawMole(ctx, x, this.moleBaseY(hy, size, p), size, m.phase === 'hit');
         ctx.restore();
       }
       // 구멍 앞 테두리: 두더지 몸통 아래를 덮어 구멍에서 나온 것처럼 보이게 한다.

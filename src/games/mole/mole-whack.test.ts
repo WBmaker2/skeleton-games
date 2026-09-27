@@ -234,6 +234,21 @@ describe('MoleWhack difficulty ramp', () => {
     expect(g.riseMsAt(60000)).toBe(MOLE_RISE_END_MS);
     expect(MOLE_RISE_START_MS).toBeGreaterThanOrEqual(400);
   });
+  it('rises from below and sinks back down (not the reverse)', () => {
+    const g = new MoleWhack();
+    const hy = g.holeY(480);
+    const size = g.moleSize(640);
+    // 완전히 올라오면 구멍선에 앉는다.
+    expect(g.moleBaseY(hy, size, 1)).toBe(hy + 4);
+    // 숨은 상태에서는 몸 전체가 구멍선 클립 아래에 묻힌다.
+    expect(g.moleBaseY(hy, size, 0) - size * 1.5).toBeGreaterThan(hy + 2);
+    // 올라올수록(=p가 클수록) 몸통 바닥선이 위로 이동한다 (아래→위 등장, 위→아래 퇴장).
+    const y0 = g.moleBaseY(hy, size, 0);
+    const yHalf = g.moleBaseY(hy, size, 0.5);
+    const y1 = g.moleBaseY(hy, size, 1);
+    expect(yHalf).toBeLessThan(y0);
+    expect(y1).toBeLessThan(yHalf);
+  });
   it('narrows hole spacing toward the center symmetrically', () => {
     const g = new MoleWhack();
     const xs = [0, 1, 2, 3, 4, 5].map((s) => g.slotX(s, 640));
