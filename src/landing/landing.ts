@@ -67,7 +67,10 @@ export function renderLanding(app: HTMLElement): void {
   app.innerHTML =
     `<div class="landing"><div class="landing__inner">`
     + `<header><p class="landing__kicker">몸을 움직이는 카메라 운동 게임</p>`
+    + `<div class="landing__titlerow">`
     + `<h1 class="landing__title">어떤 게임을 할까?</h1>`
+    + `<a class="landing__versus" href="https://wbmaker2.github.io/skeleton-versus/">2인 대결로 이동</a>`
+    + `</div>`
     + `<p class="landing__sub">마음에 드는 카드를 골라 시작하세요. 카메라 앞에 서서 온몸으로 놀아보세요.</p></header>`
     + `<main aria-label="게임 목록"><ul class="landing__grid">`
     + LANDING_GAMES.map(card).join('')

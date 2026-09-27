@@ -31,8 +31,18 @@
   color: var(--lp-leaf-deep);
 }
 
-.landing__title {
+/* 제목 줄: 왼쪽 제목, 오른쪽 2인 대결 이동 버튼 (좁으면 아래로 줄바꿈) */
+.landing__titlerow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lp-space-3) var(--lp-space-4);
   margin: 0 0 var(--lp-space-2);
+}
+
+.landing__title {
+  margin: 0;
   max-width: 22ch;
   font-family: var(--lp-font-display);
   font-size: var(--lp-text-hero);
@@ -41,6 +51,34 @@
   letter-spacing: -0.015em;
   text-wrap: balance;
   color: var(--lp-ink);
+}
+
+/* 2인 대결 앱으로 이동하는 외부 링크 버튼 (CTA와 같은 알약 모양) */
+.landing__versus {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--lp-target-min);
+  box-sizing: border-box;
+  padding: var(--lp-space-2) var(--lp-space-6);
+  font-size: var(--lp-text-body);
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--lp-leaf-deep);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.landing__versus:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(42, 80, 52, 0.18);
+}
+
+.landing__versus:focus-visible {
+  outline: var(--lp-focus-ring);
+  outline-offset: 3px;
 }
 
 .landing__sub {
@@ -207,6 +245,12 @@
   }
   .game-card:hover,
   .game-card:active {
+    transform: none;
+  }
+  .landing__versus {
+    transition: none;
+  }
+  .landing__versus:hover {
     transform: none;
   }
 }
