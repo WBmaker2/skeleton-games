@@ -4,7 +4,10 @@ import {
   MOLE_ARM_DY,
   MOLE_DOUBLE_AT_MS,
   MOLE_HIT_R,
+  MOLE_RISE_END_MS,
+  MOLE_RISE_START_MS,
   MOLE_SLOTS,
+  MOLE_SPREAD,
   MOLE_VISIBLE_END_MS,
   MOLE_VISIBLE_START_MS
 } from './mole-whack';
@@ -138,7 +141,8 @@ describe('MoleWhack chop judgement', () => {
     g.start();
     g.forceSpawn(2);
     const head = g.headPos(2, 640, 480, 1);
-    expect(g.moleSize(640)).toBeGreaterThanOrEqual(66);
+    expect(g.moleSize(640)).toBeGreaterThanOrEqual(44);
+    expect(g.moleSize(640)).toBeLessThanOrEqual(72);
     g.tick(handsFrame(0, 0, head.x, 200 - MOLE_ARM_DY - 10), 16);
     // 얼굴 중심에서 64px 옆: 예전 기준(56px)으로는 빗나가지만 지금은 맞는다.
     const events = g.tick(handsFrame(0, 0, head.x + 64, head.y), 16);
@@ -202,6 +206,24 @@ describe('MoleWhack difficulty ramp', () => {
     expect(g.maxAliveAt(0)).toBe(1);
     expect(g.maxAliveAt(MOLE_DOUBLE_AT_MS - 1)).toBe(1);
     expect(g.maxAliveAt(MOLE_DOUBLE_AT_MS)).toBe(2);
+  });
+  it('rises and falls slowly (easier than before)', () => {
+    const g = new MoleWhack();
+    expect(g.riseMsAt(0)).toBe(MOLE_RISE_START_MS);
+    expect(g.riseMsAt(60000)).toBe(MOLE_RISE_END_MS);
+    expect(MOLE_RISE_START_MS).toBeGreaterThanOrEqual(400);
+  });
+  it('narrows hole spacing toward the center symmetrically', () => {
+    const g = new MoleWhack();
+    const xs = [0, 1, 2, 3, 4, 5].map((s) => g.slotX(s, 640));
+    // 가운데(320) 대칭.
+    for (let i = 0; i < 6; i++) expect(xs[i] + xs[5 - i]).toBeCloseTo(640, 6);
+    // 균등 6분할보다 안쪽으로 모여 있다.
+    expect(xs[0]).toBeGreaterThan(640 / 12);
+    expect(xs[5]).toBeLessThan(640 - 640 / 12);
+    // 간격이 균등하다 (0.85배로 좁혀진 등간격).
+    const gaps = xs.slice(1).map((x, i) => x - xs[i]);
+    for (const gap of gaps) expect(gap).toBeCloseTo((640 / 6) * MOLE_SPREAD, 6);
   });
 });
 

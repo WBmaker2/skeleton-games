@@ -5,6 +5,8 @@ import { ScoreBoard } from '../../game/engine';
 import { drawLabel, drawStar } from '../../ui/renderer';
 
 export const MOLE_SLOTS = 6;
+// 구멍 간격을 가운데로 모으는 비율. 1이면 화면을 균등 6분할, 작을수록 가운데로 좁혀진다.
+export const MOLE_SPREAD = 0.85;
 // 손이 두더지 머리에 닿았다고 인정하는 반경(px). 별잡기·분리수거(56px)보다
 // 너그럽게 잡았다. 두더지가 커서 얼굴 근처면 맞은 것으로 인정한다.
 export const MOLE_HIT_R = 72;
@@ -17,9 +19,9 @@ export const MOLE_HIT_MS = 350;
 // 올라와 있는 시간: 시작 → 종료 (선형 단축).
 export const MOLE_VISIBLE_START_MS = 1100;
 export const MOLE_VISIBLE_END_MS = 450;
-// 올라오기·내려가기 시간: 시작 → 종료 (선형 단축).
-export const MOLE_RISE_START_MS = 350;
-export const MOLE_RISE_END_MS = 150;
+// 올라오기·내려가기 시간: 시작 → 종료 (선형 단축). 여유 있게 늦춰 난이도를 낮췄다.
+export const MOLE_RISE_START_MS = 450;
+export const MOLE_RISE_END_MS = 250;
 // 스폰 간격: 시작 → 종료 (선형 단축).
 export const MOLE_SPAWN_START_MS = 1100;
 export const MOLE_SPAWN_END_MS = 500;
@@ -126,7 +128,9 @@ export class MoleWhack implements Game {
   }
 
   slotX(slot: number, width: number): number {
-    return (width * (slot * 2 + 1)) / (MOLE_SLOTS * 2);
+    const even = (width * (slot * 2 + 1)) / (MOLE_SLOTS * 2);
+    // 가운데를 기준으로 간격을 조금씩 좁힌다 (좌우 대칭 유지).
+    return width / 2 + (even - width / 2) * MOLE_SPREAD;
   }
 
   holeY(height: number): number {
@@ -149,10 +153,9 @@ export class MoleWhack implements Game {
     return { x: this.slotX(slot, width), y: this.holeY(height) + 4 - size * 0.62 * progress };
   }
 
-  // 두더지 기준 크기(px). 6구멍 한 줄에 들어가면서 잘 보이게 1.5배 키웠다
-  // (기존 width/12·44~72 → width/8·66~108).
+  // 두더지 기준 크기(px). 원래 크기(44~72)로 되돌렸다.
   moleSize(width: number): number {
-    return Math.min(108, Math.max(66, width / 8));
+    return Math.min(72, Math.max(44, width / 12));
   }
 
   // 테스트·디버그용: 빈 구멍에 즉시 올라온 두더지를 내놓는다.
