@@ -5,12 +5,13 @@ import { ScoreBoard } from '../../game/engine';
 import { drawLabel, drawStar } from '../../ui/renderer';
 
 export const MOLE_SLOTS = 6;
-// 손이 두더지 머리에 닿았다고 인정하는 반경(px). 별잡기·분리수거와 같은 기준.
-export const MOLE_HIT_R = 56;
+// 손이 두더지 머리에 닿았다고 인정하는 반경(px). 별잡기·분리수거(56px)보다
+// 너그럽게 잡았다. 두더지가 커서 얼굴 근처면 맞은 것으로 인정한다.
+export const MOLE_HIT_R = 72;
 // 손을 올렸다고 인정하는 기준: 손목이 어깨보다 이만큼(px) 위에 있어야 무장. 수학 퀴즈와 동일.
 export const MOLE_ARM_DY = 20;
-// 내려치기로 인정하는 최소 하강 속도(px/s). 가만히 대고 있으면 타격 불가.
-export const MOLE_DOWN_VY = 80;
+// 내려치기로 인정하는 최소 하강 속도(px/s). 천천히 내려도 맞도록 여유 있게 잡았다.
+export const MOLE_DOWN_VY = 60;
 // 맞은 두더지가 깜짝 표정으로 내려가는 시간(ms).
 export const MOLE_HIT_MS = 350;
 // 올라와 있는 시간: 시작 → 종료 (선형 단축).
@@ -141,14 +142,17 @@ export class MoleWhack implements Game {
     return 0;
   }
 
-  // 타격 판정점: 올라온 두더지의 머리 중심.
+  // 타격 판정점: 올라온 두더지의 얼굴 중심. 그리기(drawMole)와 같은 기준
+  // (구멍선 +4px에서 몸통 높이 0.62배 위)으로 맞춰 손이 얼굴을 노리면 맞는다.
   headPos(slot: number, width: number, height: number, progress = 1): { x: number; y: number } {
     const size = this.moleSize(width);
-    return { x: this.slotX(slot, width), y: this.holeY(height) - size * 1.05 * progress };
+    return { x: this.slotX(slot, width), y: this.holeY(height) + 4 - size * 0.62 * progress };
   }
 
+  // 두더지 기준 크기(px). 6구멍 한 줄에 들어가면서 잘 보이게 1.5배 키웠다
+  // (기존 width/12·44~72 → width/8·66~108).
   moleSize(width: number): number {
-    return Math.min(72, Math.max(44, width / 12));
+    return Math.min(108, Math.max(66, width / 8));
   }
 
   // 테스트·디버그용: 빈 구멍에 즉시 올라온 두더지를 내놓는다.

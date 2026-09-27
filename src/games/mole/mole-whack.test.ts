@@ -133,6 +133,37 @@ describe('MoleWhack chop judgement', () => {
     expect(events.map((e) => e.type)).not.toContain('catch');
     expect(g.caught).toBe(0);
   });
+  it('hits generously near the face (beyond the old strict radius)', () => {
+    const g = new MoleWhack();
+    g.start();
+    g.forceSpawn(2);
+    const head = g.headPos(2, 640, 480, 1);
+    expect(g.moleSize(640)).toBeGreaterThanOrEqual(66);
+    g.tick(handsFrame(0, 0, head.x, 200 - MOLE_ARM_DY - 10), 16);
+    // 얼굴 중심에서 64px 옆: 예전 기준(56px)으로는 빗나가지만 지금은 맞는다.
+    const events = g.tick(handsFrame(0, 0, head.x + 64, head.y), 16);
+    expect(events.map((e) => e.type)).toContain('catch');
+    expect(g.caught).toBe(1);
+  });
+  it('hits even with a slow chop', () => {
+    const g = new MoleWhack();
+    g.start();
+    g.forceSpawn(2);
+    const head = g.headPos(2, 640, 480, 1);
+    g.tick(handsFrame(0, 0, head.x, 200 - MOLE_ARM_DY - 10), 16);
+    // 반경 바로 밖까지 내려간다 (아직 안 맞음).
+    g.tick(handsFrame(0, 0, head.x, head.y - (MOLE_HIT_R + 1)), 16);
+    expect(g.caught).toBe(0);
+    // 이후 1px씩 천천히 내려도 (하강 속도 62.5px/s) 반경에 들어오면 맞는다.
+    let hit = false;
+    for (let i = 0; i < 5; i++) {
+      const y = head.y - MOLE_HIT_R + i;
+      const ev = g.tick(handsFrame(0, 0, head.x, y), 16);
+      if (ev.some((e) => e.type === 'catch')) hit = true;
+    }
+    expect(hit).toBe(true);
+    expect(g.caught).toBe(1);
+  });
   it('needs re-arming for the next mole after a hit', () => {
     const g = new MoleWhack();
     g.start();
