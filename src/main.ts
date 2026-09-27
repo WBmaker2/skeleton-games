@@ -185,6 +185,21 @@ export function boot(): void {
     const overlay = document.getElementById('calib');
     const skip = document.getElementById('skip');
     const retry = document.getElementById('retry');
+    // 다시 시작해도 카운트다운이 나오도록 오버레이 상태를 초기화한다.
+    // (이전 판에 삭제하지 않고 숨겨 두므로, 스킵 여부·에러 표시를 되돌린다.)
+    if (overlay) {
+      (overlay as HTMLElement & { skipped?: boolean }).skipped = false;
+      overlay.classList.remove('overlay-error');
+      overlay.hidden = false;
+    }
+    if (skip) skip.hidden = false;
+    // 이전 판의 남은 시간 표시 타이머가 돌고 있으면 끈다 (중복 갱신 방지).
+    clearInterval(fpsTimer);
+    // 이전 판의 카메라 스트림이 남아 있으면 끈다 (재인식·다시 도전 시 중복 점유 방지).
+    const oldVideo = document.getElementById('cam') as HTMLVideoElement | null;
+    const oldStream = oldVideo?.srcObject as MediaStream | null;
+    if (oldStream && typeof oldStream.getTracks === 'function') oldStream.getTracks().forEach((t) => t.stop());
+    if (oldVideo) oldVideo.srcObject = null;
     skip?.addEventListener('click', () => {
       if (overlay) (overlay as HTMLElement & { skipped?: boolean }).skipped = true;
     });
@@ -222,7 +237,8 @@ export function boot(): void {
     }
     engine = loaded;
     const cal = overlay ? await countdownCalibration(engine, video, overlay) : defaultCalibration();
-    overlay?.remove();
+    // 카운트다운 박스는 삭제하지 않고 숨긴다: 다시 도전해도 카운트가 나와야 한다.
+    if (overlay) overlay.hidden = true;
     if (game instanceof FruitNinja) game.radiusScale = cal.scale;
     if (game instanceof BodyABC) game.mode = cal.mode;
     game.start();
