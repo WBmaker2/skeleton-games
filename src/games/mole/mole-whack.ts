@@ -1,8 +1,10 @@
 import type { PoseFrame } from '../../pose/types';
-import { getByName, palmOf } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawLabel, drawStar } from '../../ui/renderer';
+import { createSeededRng } from '../../game/rng';
+import { ramp } from '../../game/difficulty';
+import { HandTracker } from '../../game/hand-tracker';
 
 export const MOLE_SLOTS = 6;
 // 구멍 간격을 가운데로 모으는 비율. 1이면 화면을 균등 6분할, 작을수록 가운데로 좁혀진다.
@@ -68,7 +70,8 @@ export class MoleWhack implements Game {
   private running = false;
   private spawnMs = 0;
   private lastSlot = -1;
-  private seed = 1;
+  private rngFn = createSeededRng(1);
+  private tracker = new HandTracker({ armDy: MOLE_ARM_DY });
 
   start(): void {
     this.running = true;
@@ -78,7 +81,8 @@ export class MoleWhack implements Game {
     this.elapsedMs = 0;
     this.spawnMs = 0;
     this.lastSlot = -1;
-    this.seed = 1;
+    this.rngFn = createSeededRng(1);
+    this.tracker.reset();
     this.moles = Array.from({ length: MOLE_SLOTS }, (_, slot) => ({
       slot,
       phase: 'hidden' as MolePhase,
@@ -97,10 +101,9 @@ export class MoleWhack implements Game {
     this.running = false;
   }
 
-  // 게임 내 난수 생성기 (별잡기·분리수거와 같은 LCG, 테스트 재현 가능).
+  // 게임 내 난수 생성기 (공용 LCG, 테스트 재현 가능).
   private rnd(): number {
-    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
-    return this.seed / 0x7fffffff;
+    return this.rngFn();
   }
 
   private frac(): number {
@@ -108,18 +111,15 @@ export class MoleWhack implements Game {
   }
 
   visibleMsAt(elapsedMs: number): number {
-    const p = Math.min(1, elapsedMs / MOLE_GAME_MS);
-    return MOLE_VISIBLE_START_MS - (MOLE_VISIBLE_START_MS - MOLE_VISIBLE_END_MS) * p;
+    return ramp(MOLE_VISIBLE_START_MS, MOLE_VISIBLE_END_MS, elapsedMs, MOLE_GAME_MS);
   }
 
   riseMsAt(elapsedMs: number): number {
-    const p = Math.min(1, elapsedMs / MOLE_GAME_MS);
-    return MOLE_RISE_START_MS - (MOLE_RISE_START_MS - MOLE_RISE_END_MS) * p;
+    return ramp(MOLE_RISE_START_MS, MOLE_RISE_END_MS, elapsedMs, MOLE_GAME_MS);
   }
 
   spawnMsAt(elapsedMs: number): number {
-    const p = Math.min(1, elapsedMs / MOLE_GAME_MS);
-    return MOLE_SPAWN_START_MS - (MOLE_SPAWN_START_MS - MOLE_SPAWN_END_MS) * p;
+    return ramp(MOLE_SPAWN_START_MS, MOLE_SPAWN_END_MS, elapsedMs, MOLE_GAME_MS);
   }
 
   maxAliveAt(elapsedMs: number): number {
@@ -195,25 +195,15 @@ export class MoleWhack implements Game {
   }
 
   private trackHand(frame: PoseFrame, side: 'left' | 'right', dtMs: number): { x: number; y: number } | null {
+    // 공용 HandTracker가 무장·속도를 계산하고, 기존 hands 객체에 동기화한다 (테스트 호환).
+    const palm = this.tracker.track(frame, side, dtMs);
     const st = this.hands[side];
-    const palm = palmOf(frame, side);
+    st.armed = this.tracker.armed[side];
+    st.vy = this.tracker.velocity(side);
     if (!palm) {
-      // 손이 사라지면 속도만 리셋하고 무장은 유지한다 (깜빡임에 관대).
       st.prevX = null;
       st.prevY = null;
-      st.vy = 0;
       return null;
-    }
-    // 어깨 위로 한 번 올리면 무장 래치: 내려간 뒤에도 유지되고 타격 시 소모된다.
-    const shoulder = getByName(frame, `${side}_shoulder`);
-    const wrist = getByName(frame, `${side}_wrist`);
-    if (shoulder && wrist && (wrist.score ?? 0) >= 0.3 && (shoulder.score ?? 0) >= 0.3) {
-      if (wrist.y < shoulder.y - MOLE_ARM_DY) st.armed = true;
-    }
-    if (st.prevY != null && dtMs > 0) {
-      st.vy = ((palm.y - st.prevY) / dtMs) * 1000;
-    } else {
-      st.vy = 0;
     }
     st.prevX = palm.x;
     st.prevY = palm.y;
@@ -282,6 +272,7 @@ export class MoleWhack implements Game {
       best.hitP = this.progressOf(best);
       best.phase = 'hit';
       best.tMs = 0;
+      this.tracker.consume(p.side);
       st.armed = false;
       this.caught += 1;
       this.board.comboHit();

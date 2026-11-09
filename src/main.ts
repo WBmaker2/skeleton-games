@@ -8,7 +8,7 @@ import type { PoseEngine } from './pose/pose-engine';
 import { calibrate } from './calibration/calibrator';
 import type { Calibration, PoseFrame } from './pose/types';
 import { GameLoop } from './game/loop';
-import { beep } from './ui/feedback';
+import { beep, isMuted, toggleMuted } from './ui/feedback';
 import { saveScore, shareLink } from './game/storage';
 import { boardHTML, refreshBoard, resultDoneHTML, resultFormHTML } from './ui/leaderboard';
 import type { ScoreBoard } from './game/engine';
@@ -126,17 +126,19 @@ export function boot(): void {
       `<main aria-label="게임 화면">` +
       `<p data-testid="route" hidden>${id}</p>` +
       `<div class="stage-wrap"><div class="stage-frame"><video id="cam" playsinline muted></video><canvas id="stage" width="640" height="480"></canvas></div>` +
-      `<div id="calib" class="overlay overlay-float"><p id="calibmsg"></p><button id="skip" class="btn">스킵하고 시작</button></div>` +
+      `<div id="calib" class="overlay overlay-float"><p id="calibmsg"></p><label class="practice-check"><input type="checkbox" id="practice"> 연습 모드 (시간 제한 없음)</label><button id="skip" class="btn">스킵하고 시작</button></div>` +
       `<div id="result" class="overlay overlay-float" hidden></div></div>` +
       `<section class="hud" aria-label="점수판">` +
       `<div class="hud-chip"><span>점수</span><strong id="score">0</strong></div>` +
       `<div class="hud-chip"><span>콤보</span><strong id="combo">0</strong></div>` +
       `<div class="hud-chip"><span>남은 시간</span><strong id="time">1:00</strong></div>` +
       `<div class="hud-chip"><span>상태</span><strong id="fps">준비 중</strong></div></section>` +
-      `<p id="hud" class="hud-msg">준비 중…</p>` +
+      `<p id="hud" class="hud-msg" aria-live="polite">준비 중…</p>` +
       `<div class="camrow"><label for="camsel">카메라</label><select id="camsel"></select>` +
-      `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button></div>` +
-      `<p class="shareline">공유: <span id="share"></span></p><div id="ranks">${''}</div>` +
+      `<button id="retry" class="btn btn-accent" hidden>카메라 다시 찾기</button>` +
+      `<button id="pause" class="btn-small" hidden>일시정지</button>` +
+      `<button id="mutebtn" class="btn-small">소리 끄기</button></div>` +
+      `<p class="shareline">공유: <span id="share"></span> <button id="copyd" class="btn-small">링크 복사</button></p><div id="ranks">${''}</div>` +
       `</main></div></div>`;
     wireHowTo(app, id);
     refreshBoard(app, id);
@@ -212,6 +214,27 @@ export function boot(): void {
     });
     const game = createGame(id);
     wireCameraSelect(id);
+    const practiceBox = document.getElementById('practice') as HTMLInputElement | null;
+    const pauseBtn = document.getElementById('pause') as HTMLButtonElement | null;
+    const muteBtn = document.getElementById('mutebtn') as HTMLButtonElement | null;
+    const copyBtn = document.getElementById('copyd') as HTMLButtonElement | null;
+    const syncMuteBtn = (): void => {
+      if (muteBtn) muteBtn.textContent = isMuted() ? '소리 켜기' : '소리 끄기';
+    };
+    syncMuteBtn();
+    muteBtn?.addEventListener('click', () => {
+      toggleMuted();
+      syncMuteBtn();
+    });
+    copyBtn?.addEventListener('click', async () => {
+      const link = shareLink(id);
+      try {
+        await navigator.clipboard.writeText(link);
+        if (hud) hud.textContent = '공유 링크를 복사했어요. 친구에게 보내주세요!';
+      } catch {
+        if (hud) hud.textContent = `공유 링크: ${link}`;
+      }
+    });
     // 카메라 전용: 키보드·포인터 폴백 없음. 실패하면 재인식 UI를 보여준다.
     const showCamError = (msg: string): void => {
       const overlay = document.getElementById('calib');
@@ -239,6 +262,7 @@ export function boot(): void {
       return;
     }
     engine = loaded;
+    const practice = practiceBox?.checked === true;
     const cal = overlay ? await countdownCalibration(engine, video, overlay) : defaultCalibration();
     // 카운트다운 박스는 삭제하지 않고 숨긴다: 다시 도전해도 카운트가 나와야 한다.
     if (overlay) overlay.hidden = true;
@@ -267,6 +291,10 @@ export function boot(): void {
       // MathJump·BodyABC처럼 상단 텍스트가 있는 게임은 마스크를 로드하지 않는다.
       face: (game as { hideFace?: boolean }).hideFace ? null : loadFaceMask(id),
       timeLimitSec: 60,
+      practice,
+      onPoseError: (count) => {
+        if (hud) hud.textContent = `사람을 찾기 어려워요 (${count}회). 조명을 밝게 하고 1.5~2.5m 거리를 유지해주세요.`;
+      },
       onTimeUp: (board) => {
         showRanks();
         const result = document.getElementById('result');
@@ -274,7 +302,7 @@ export function boot(): void {
         if (board.score <= 0) {
           result.innerHTML =
             `<p>60초 챌린지 종료! 점수를 얻지 못했어요.</p>` +
-            `<button type="button" id="again" class="btn">다시 도전</button>`;
+            `<button type="button" id="again" class="btn btn-pulse">다시 도전</button>`;
         } else {
           // 이름 등록 폼: 빈 이름은 등록 불가 (색이 아닌 문구로 안내, WCAG 3.3.1).
           result.innerHTML = resultFormHTML(board.score);
@@ -334,16 +362,37 @@ export function boot(): void {
         }
       }
     });
+    if (pauseBtn) {
+      pauseBtn.hidden = false;
+      pauseBtn.textContent = '일시정지';
+      pauseBtn.onclick = () => {
+        if (!loop) return;
+        if (loop.isPaused) {
+          loop.resume();
+          pauseBtn.textContent = '일시정지';
+          if (hud) hud.textContent = '다시 시작!';
+        } else {
+          loop.pause();
+          pauseBtn.textContent = '계속하기';
+          if (hud) hud.textContent = '일시정지 중. 쉬었다가 계속하기를 눌러주세요.';
+        }
+      };
+    }
     loop.start();
     fpsTimer = Number(setInterval(() => {
       if (!loop) {
         clearInterval(fpsTimer);
         return;
       }
-      const remain = Math.max(0, 60 - Math.floor(loop.elapsedSec));
       const timeEl = document.getElementById('time');
-      if (timeEl) timeEl.textContent = `${Math.floor(remain / 60)}:${String(remain % 60).padStart(2, '0')}`;
-      if (fpsEl) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드`;
+      if (practice) {
+        const elapsed = Math.floor(loop.elapsedSec);
+        if (timeEl) timeEl.textContent = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
+      } else {
+        const remain = Math.max(0, 60 - Math.floor(loop.elapsedSec));
+        if (timeEl) timeEl.textContent = `${Math.floor(remain / 60)}:${String(remain % 60).padStart(2, '0')}`;
+      }
+      if (fpsEl) fpsEl.textContent = `${loop.fps.toFixed(0)}fps · ${cal.mode === 'seated' ? '앉음' : '선'} 모드${practice ? ' · 연습' : ''}${loop.isPaused ? ' · 정지' : ''}`;
     }, 500));
   };
   window.addEventListener('hashchange', render);
@@ -355,12 +404,14 @@ export async function openCamera(deviceId?: string): Promise<HTMLVideoElement | 
   if (!video) return null;
   // 저장된 카메라가 있으면 먼저 정확히 지정해서 시도한다.
   // 저사양 지원 중단: 720p 우선으로 영상 품질을 확보한다.
+  // frameRate를 30으로 묶어 저사양 기기의 발열·드롭을 줄인다.
+  const fps: MediaTrackConstraints['frameRate'] = { ideal: 30, max: 30 };
   const attempts: MediaTrackConstraints[] = deviceId
-    ? [{ deviceId: { exact: deviceId }, width: 1280, height: 720 }]
+    ? [{ deviceId: { exact: deviceId }, width: 1280, height: 720, frameRate: fps }]
     : [];
   attempts.push(
-    { width: 1280, height: 720, facingMode: 'user' },
-    { width: 640, height: 480 }
+    { width: 1280, height: 720, facingMode: 'user', frameRate: fps },
+    { width: 640, height: 480, frameRate: fps }
   );
   for (const vc of attempts) {
     try {

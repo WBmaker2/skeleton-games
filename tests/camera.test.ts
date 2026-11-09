@@ -23,11 +23,11 @@ describe('openCamera fallback chain', () => {
     expect(out).toBe(video);
     expect(getUserMedia).toHaveBeenCalledTimes(2);
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
-      video: { width: 1280, height: 720, facingMode: 'user' },
+      video: { width: 1280, height: 720, facingMode: 'user', frameRate: { ideal: 30, max: 30 } },
       audio: false
     });
     expect(getUserMedia).toHaveBeenNthCalledWith(2, {
-      video: { width: 640, height: 480 },
+      video: { width: 640, height: 480, frameRate: { ideal: 30, max: 30 } },
       audio: false
     });
     expect(video.srcObject).toBe(stream720);
@@ -55,7 +55,7 @@ describe('openCamera device selection', () => {
     const out = await openCamera('abc123');
     expect(out).toBe(video);
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
-      video: { deviceId: { exact: 'abc123' }, width: 1280, height: 720 },
+      video: { deviceId: { exact: 'abc123' }, width: 1280, height: 720, frameRate: { ideal: 30, max: 30 } },
       audio: false
     });
   });

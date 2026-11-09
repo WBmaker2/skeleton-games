@@ -13,7 +13,8 @@ npm run build   # dist/ 생성
 
 ## GitHub Pages
 
-`vite.config.ts`에 `base: '/<repo>/'` 추가 후 build, `dist/`를 `gh-pages` 브랜치에 푸시.
+`vite.config.ts`의 `base: '/skeleton-games/'`를 유지한 채 build, `dist/`를 `gh-pages` 브랜치에 푸시.
+(로컬 폴더명은 skeleton-idea지만 배포 repo명은 skeleton-games. 루트 호스팅 시에만 `/`로 변경.)
 
 ## Cloudflare Pages
 

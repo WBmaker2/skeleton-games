@@ -1,8 +1,8 @@
 // src/games/fruit/fruit-ninja.ts
 import type { PoseFrame } from '../../pose/types';
-import { palmOf } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
+import { SwipeTracker } from '../../game/swipe';
 
 export interface Fruit { x: number; y: number; vx: number; vy: number; kind: 'fruit' | 'bomb'; alive: boolean }
 
@@ -15,6 +15,7 @@ export class FruitNinja implements Game {
   private running = false;
   private spawnMs = 0;
   private spawnCount = 0;
+  private swipe = new SwipeTracker();
 
   start(): void {
     this.running = true;
@@ -23,6 +24,7 @@ export class FruitNinja implements Game {
     this.spawnMs = 0;
     this.slices = 0;
     this.spawnCount = 0;
+    this.swipe.reset();
   }
   stop(): void {
     this.running = false;
@@ -81,13 +83,17 @@ export class FruitNinja implements Game {
       f.y += f.vy * dt;
       f.vy += 700 * dt;
     }
-    const palms = [palmOf(frame, 'left'), palmOf(frame, 'right')].filter(
-      (w): w is { x: number; y: number } => w !== null
-    );
+    // 베기 판정: 손이 일정 속도 이상으로 움직이면서 닿아야 인정한다.
+    // 가만히 손을 받쳐 과일을 받는 것만으로는 점수가 오르지 않는다.
+    const hands: { x: number; y: number; swiping: boolean }[] = [];
+    for (const side of ['left', 'right'] as const) {
+      const p = this.swipe.track(frame, side, dtMs);
+      if (p) hands.push({ x: p.x, y: p.y, swiping: this.swipe.isSwiping(side) });
+    }
     const events: GameEvent[] = [];
     for (const f of this.fruits) {
       if (!f.alive) continue;
-      const hit = palms.some((w) => Math.hypot(w.x - f.x, w.y - f.y) < 48 * this.radiusScale);
+      const hit = hands.some((w) => w.swiping && Math.hypot(w.x - f.x, w.y - f.y) < 48 * this.radiusScale);
       if (hit) {
         f.alive = false;
         if (f.kind === 'fruit') {

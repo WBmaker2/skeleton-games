@@ -62,6 +62,26 @@ export function openModal(opts: ModalOpts): () => void {
     if (e.key === 'Escape') {
       e.stopPropagation();
       close();
+      return;
+    }
+    // Tab 트랩: 포커스가 모달 밖으로 나가지 않게 순환한다.
+    if (e.key === 'Tab') {
+      const focusables = [...overlay.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )].filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   };
   overlay.addEventListener('mousedown', (e) => {

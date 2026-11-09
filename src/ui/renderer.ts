@@ -197,19 +197,8 @@ const GUIDE_LAYOUTS: Record<PoseGuideTarget, GuideLayout> = {
   }
 };
 
-// 목표 알파벳 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
-// 외부 이미지 없이 코드로 그려지므로 에셋이 없어도 항상 보인다.
-// 스테이지는 셀카 미러(CSS scaleX(-1))이므로, 막대인간 좌우가 뒤집혀
-// 보이지 않도록 패널 중심 기준으로 한 번 더 뒤집어 그린다 (L·K 같은 비대칭 대비).
-// drawLabel은 자체적으로 뒤집기를 하므로 패널 안 글자는 그대로 호출한다.
-export function drawPoseGuide(
-  ctx: CanvasRenderingContext2D,
-  target: PoseGuideTarget,
-  x: number,
-  y: number,
-  w: number,
-  h: number
-): void {
+// 공용 패널 배경: 세 가지 스켈레톤 가이드가 같은 모양을 쓴다.
+export function drawPanelBase(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
   ctx.save();
   ctx.fillStyle = 'rgba(10, 16, 22, 0.72)';
   ctx.strokeStyle = '#ffffff';
@@ -221,6 +210,34 @@ export function drawPoseGuide(
   ctx.fill();
   ctx.stroke();
   ctx.restore();
+}
+
+// 셀카 미러 상쇄: 패널 중심 기준 좌우반전. L·K 같은 비대칭도 정상으로 보인다.
+export function withMirroredPanel<T>(ctx: CanvasRenderingContext2D, x: number, w: number, fn: () => T): T {
+  const cx = x + w / 2;
+  ctx.save();
+  ctx.translate(cx, 0);
+  ctx.scale(-1, 1);
+  ctx.translate(-cx, 0);
+  try {
+    return fn();
+  } finally {
+    ctx.restore();
+  }
+}
+
+// 목표 알파벳 스켈레톤 가이드: 오른쪽 위 패널에 막대인간 예시를 그린다.
+// 외부 이미지 없이 코드로 그려지므로 에셋이 없어도 항상 보인다.
+// drawLabel은 자체적으로 뒤집기를 하므로 패널 안 글자는 그대로 호출한다.
+export function drawPoseGuide(
+  ctx: CanvasRenderingContext2D,
+  target: PoseGuideTarget,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): void {
+  drawPanelBase(ctx, x, y, w, h);
 
   // 막대인간 영역: 위쪽 설명 여백·아래쪽 글자 여백을 제외한 안쪽 박스.
   const padX = 12;
@@ -300,17 +317,7 @@ export function drawDanceGuide(
   h: number,
   label?: string
 ): void {
-  ctx.save();
-  ctx.fillStyle = 'rgba(10, 16, 22, 0.72)';
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  const rr = (ctx as unknown as { roundRect?: (...a: number[]) => void }).roundRect;
-  if (typeof rr === 'function') rr.call(ctx, x, y, w, h, 14);
-  else ctx.rect(x, y, w, h);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
+  drawPanelBase(ctx, x, y, w, h);
 
   const padX = 12;
   const top = y + 12;
@@ -419,17 +426,7 @@ export function drawYogaGuide(
   h: number,
   label?: string
 ): void {
-  ctx.save();
-  ctx.fillStyle = 'rgba(10, 16, 22, 0.72)';
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  const rr = (ctx as unknown as { roundRect?: (...a: number[]) => void }).roundRect;
-  if (typeof rr === 'function') rr.call(ctx, x, y, w, h, 14);
-  else ctx.rect(x, y, w, h);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
+  drawPanelBase(ctx, x, y, w, h);
 
   const padX = 12;
   const top = y + 12;

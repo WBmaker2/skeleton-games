@@ -25,7 +25,9 @@ function hands(x: number, y: number): Keypoint[] {
 }
 
 // 지금 나온 쓰레기를 잡아서 toX 자리로 가져가 판정까지 진행한다.
+// 스윕 판정: 먼저 멀리 있다가 움직이면서 잡아야 한다.
 function carryRound(g: RecycleSort, toX: number): string[] {
+  g.tick(frame([...torso(320), ...hands(600, 40)]), 16);
   g.tick(frame([...torso(320), ...hands(g.item.x, g.item.y)]), 16);
   const seen: string[] = [];
   for (let i = 0; i < 40; i++) {
@@ -82,16 +84,26 @@ describe('RecycleSort grab-and-carry', () => {
     expect(kinds).toContain('plastic');
     expect(kinds).toContain('can');
   });
-  it('grabs trash when a hand touches it', () => {
+  it('grabs trash when a moving hand touches it', () => {
     const g = new RecycleSort();
     g.start();
+    g.tick(frame([...torso(320), ...hands(600, 40)]), 16);
     const events = g.tick(frame([...torso(320), ...hands(g.item.x, g.item.y)]), 16);
     expect(events.map((e) => e.type)).toContain('grab');
     expect(g.carriedBy).toBe('right');
   });
+  it('does not grab when the hand just rests on trash', () => {
+    const g = new RecycleSort();
+    g.start();
+    g.tick(frame([...torso(320), ...hands(g.item.x, g.item.y)]), 16);
+    const events = g.tick(frame([...torso(320), ...hands(g.item.x, g.item.y)]), 16);
+    expect(events.map((e) => e.type)).not.toContain('grab');
+    expect(g.carriedBy).toBeNull();
+  });
   it('carries the item with the hand', () => {
     const g = new RecycleSort();
     g.start();
+    g.tick(frame([...torso(320), ...hands(600, 40)]), 16);
     g.tick(frame([...torso(320), ...hands(g.item.x, g.item.y)]), 16);
     g.tick(frame([...torso(200), ...hands(200, 280)]), 16);
     expect(g.item.x).toBe(200);
@@ -129,6 +141,7 @@ describe('RecycleSort grab-and-carry', () => {
   it('drops in place when the hand is lost', () => {
     const g = new RecycleSort();
     g.start();
+    g.tick(frame([...torso(320), ...hands(600, 40)]), 16);
     g.tick(frame([...torso(320), ...hands(g.item.x, g.item.y)]), 16);
     expect(g.carriedBy).toBe('right');
     g.tick(frame(torso(320)), 16);

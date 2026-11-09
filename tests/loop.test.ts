@@ -7,10 +7,12 @@ import { FruitNinja } from '../src/games/fruit';
 
 let rafCb: FrameRequestCallback | null = null;
 let cancelled = false;
+let nowT = 1000;
 
 function installRaf(): void {
   rafCb = null;
   cancelled = false;
+  nowT = 1000;
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     rafCb = cb;
     return 1;
@@ -25,12 +27,11 @@ afterEach(() => {
 });
 
 function pump(times: number, stepMs: number): void {
-  let t = 1000;
   for (let i = 0; i < times; i++) {
-    t += stepMs;
+    nowT += stepMs;
     const cb = rafCb;
     rafCb = null;
-    cb?.(t);
+    cb?.(nowT);
   }
 }
 
@@ -38,13 +39,23 @@ describe('GameLoop', () => {
   it('ticks game and forwards events with board state', async () => {
     installRaf();
     const engine = new FakeEngine();
-    engine.push({
+    // 스윕 판정: 첫 프레임은 멀리, 다음 프레임부터 과일 위로 빠르게 이동.
+    const far = {
+      width: 640, height: 480, timestamp: 0,
+      keypoints: [
+        { name: 'left_wrist', x: 0, y: 0, score: 1 },
+        { name: 'right_wrist', x: 500, y: 400, score: 1 }
+      ]
+    };
+    const onFruit = {
       width: 640, height: 480, timestamp: 0,
       keypoints: [
         { name: 'left_wrist', x: 100, y: 100, score: 1 },
         { name: 'right_wrist', x: 500, y: 400, score: 1 }
       ]
-    });
+    };
+    let n = 0;
+    engine.estimate = (async () => (n++ === 0 ? far : onFruit)) as typeof engine.estimate;
     const game = new FruitNinja();
     game.start();
     game.fruits.length = 0;
@@ -63,7 +74,12 @@ describe('GameLoop', () => {
       onEvent: (events) => seen.push(...events.map((e) => e.type))
     });
     loop.start();
-    pump(3, 16);
+    // 단일 추론 가드 때문에 한 틱씩 비워야 다음 추론이 실행된다.
+    pump(1, 16);
+    await new Promise((r) => setTimeout(r, 0));
+    pump(1, 16);
+    await new Promise((r) => setTimeout(r, 0));
+    pump(1, 16);
     await new Promise((r) => setTimeout(r, 0));
     loop.stop();
     expect(seen).toContain('slice');
@@ -87,6 +103,9 @@ describe('GameLoop', () => {
     });
     loop.start();
     pump(1, 16);
+    // 단일 추론 가드: 첫 프레임의 비동기 추론이 끝나야 다음 프레임이 실행된다.
+    // 실제 브라우저에서는 rAF 사이에 마이크로태스크가 비므로, 테스트도 한 틱씩 비운다.
+    await new Promise((r) => setTimeout(r, 0));
     pump(1, 5000);
     await new Promise((r) => setTimeout(r, 0));
     loop.stop();
@@ -164,13 +183,23 @@ describe('GameLoop penalty effects', () => {
   it('bursts red particles and shakes on bomb', async () => {
     installRaf();
     const engine = new FakeEngine();
-    engine.push({
-      width: 640, height: 480, timestamp: 0,
-      keypoints: [
-        { name: 'left_wrist', x: 100, y: 100, score: 1 },
-        { name: 'right_wrist', x: 500, y: 400, score: 1 }
-      ]
-    });
+    // 폭탄도 움직이면서 건드려야 터진다: 첫 프레임 멀리, 다음 프레임 폭탄 위로.
+    let n = 0;
+    engine.estimate = (async () => (n++ === 0
+      ? {
+        width: 640, height: 480, timestamp: 0,
+        keypoints: [
+          { name: 'left_wrist', x: 0, y: 0, score: 1 },
+          { name: 'right_wrist', x: 500, y: 400, score: 1 }
+        ]
+      }
+      : {
+        width: 640, height: 480, timestamp: 0,
+        keypoints: [
+          { name: 'left_wrist', x: 100, y: 100, score: 1 },
+          { name: 'right_wrist', x: 500, y: 400, score: 1 }
+        ]
+      })) as typeof engine.estimate;
     const game = new FruitNinja();
     game.start();
     game.fruits.length = 0;
@@ -187,7 +216,11 @@ describe('GameLoop penalty effects', () => {
       showSkeleton: false
     });
     loop.start();
-    pump(3, 40);
+    pump(1, 40);
+    await new Promise((r) => setTimeout(r, 0));
+    pump(1, 40);
+    await new Promise((r) => setTimeout(r, 0));
+    pump(1, 40);
     await new Promise((r) => setTimeout(r, 0));
     expect(loop.particleCount).toBeGreaterThan(0);
     expect(canvas.classList.contains('shake')).toBe(true);

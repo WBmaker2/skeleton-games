@@ -1,8 +1,8 @@
 import type { PoseFrame } from '../../pose/types';
-import { palmOf } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawLabel, drawStar } from '../../ui/renderer';
+import { SwipeTracker } from '../../game/swipe';
 
 export interface Star {
   x: number;
@@ -10,7 +10,8 @@ export interface Star {
   alive: boolean;
 }
 
-// 별잡기 스트레칭: 손을 별에 0.3초 대면 잡힌다. 좌우·위아래 유연성.
+// 별잡기 스트레칭: 움직이는 손으로 별에 닿은 뒤 0.3초 대면 잡힌다. 좌우·위아래 유연성.
+// 별이 나온 자리에 가만히 손을 올려놓고 기다리는 것만으로는 잡히지 않는다.
 export class StarCatch implements Game {
   id = 'star';
   // 상단 카운트 시인성을 위해 얼굴 마스크를 그리지 않는다 (수학·ABC와 동일).
@@ -21,11 +22,13 @@ export class StarCatch implements Game {
   private running = false;
   private holdMs = 0;
   private seed = 1;
+  private swipe = new SwipeTracker();
 
   start(): void {
     this.running = true;
     this.board.reset();
     this.caught = 0;
+    this.swipe.reset();
     this.respawn();
   }
   stop(): void {
@@ -51,12 +54,23 @@ export class StarCatch implements Game {
   }
   tick(frame: PoseFrame, dtMs: number): GameEvent[] {
     if (!this.running || !this.star.alive) return [];
-    const palms = [palmOf(frame, 'left'), palmOf(frame, 'right')].filter(
-      (w): w is { x: number; y: number } => w !== null
-    );
-    const near = palms.some((w) => Math.hypot(w.x - this.star.x, w.y - this.star.y) < 56);
+    const hands: { swiping: boolean; near: boolean }[] = [];
+    for (const side of ['left', 'right'] as const) {
+      const p = this.swipe.track(frame, side, dtMs);
+      if (!p) continue;
+      hands.push({
+        swiping: this.swipe.isSwiping(side),
+        near: Math.hypot(p.x - this.star.x, p.y - this.star.y) < 56
+      });
+    }
+    const near = hands.some((h) => h.near);
     if (!near) {
       this.holdMs = 0;
+      return [];
+    }
+    // 처음 닿을 때는 손이 움직이고 있어야 한다: 별 자리에 손을 올려놓고
+    // 가만히 기다리는 것만으로는 잡히지 않는다. 일단 시작되면 가만히 대도 된다.
+    if (this.holdMs === 0 && !hands.some((h) => h.near && h.swiping)) {
       return [];
     }
     this.holdMs += dtMs;

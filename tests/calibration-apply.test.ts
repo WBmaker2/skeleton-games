@@ -23,6 +23,8 @@ describe('calibration application', () => {
     g.radiusScale = 2;
     g.fruits.length = 0;
     g.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'fruit', alive: true });
+    // 스윕 판정: 먼저 멀리 있다가 빠르게 움직여야 베어진다.
+    g.tick(wristFrame(0, 0), 16);
     const events = g.tick(wristFrame(180, 100), 16);
     expect(events.some((e) => e.type === 'slice')).toBe(true);
   });

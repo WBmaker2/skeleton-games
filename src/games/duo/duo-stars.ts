@@ -1,8 +1,8 @@
 import type { PoseFrame } from '../../pose/types';
-import { palmOf } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawLabel, drawStar } from '../../ui/renderer';
+import { SwipeTracker } from '../../game/swipe';
 
 export interface DuoStar { x: number; y: number }
 
@@ -23,12 +23,14 @@ export class DuoStars implements Game {
   private running = false;
   private holdMs = 0;
   private seed = 1;
+  private swipe = new SwipeTracker();
 
   start(): void {
     this.running = true;
     this.board.reset();
     this.pairs = 0;
     this.seed = 1;
+    this.swipe.reset();
     this.newRound(640, 480);
   }
   stop(): void {
@@ -114,15 +116,25 @@ export class DuoStars implements Game {
     if (!this.running || this.stars.length === 0) return [];
     const target = this.stars[this.index];
     if (!target) return [];
-    const palms = [palmOf(frame, 'left'), palmOf(frame, 'right')].filter(
-      (w): w is { x: number; y: number } => w !== null
-    );
     // 판정 반경: 화면 너비의 10% (640px 기준 64px, 1280px 기준 128px).
     // 어느 손이든 현재 번호 별에 닿으면 인정 (셀카 미러 좌우 혼동 방지).
+    // 처음 닿을 때는 손이 움직이고 있어야 한다: 별 자리에 손을 올려놓고 기다리면 인정 안 됨.
     const radius = frame.width * 0.1;
-    const near = palms.some((w) => Math.hypot(w.x - target.x, w.y - target.y) < radius);
+    const hands: { swiping: boolean; near: boolean }[] = [];
+    for (const side of ['left', 'right'] as const) {
+      const p = this.swipe.track(frame, side, dtMs);
+      if (!p) continue;
+      hands.push({
+        swiping: this.swipe.isSwiping(side),
+        near: Math.hypot(p.x - target.x, p.y - target.y) < radius
+      });
+    }
+    const near = hands.some((h) => h.near);
     if (!near) {
       this.holdMs = 0;
+      return [];
+    }
+    if (this.holdMs === 0 && !hands.some((h) => h.near && h.swiping)) {
       return [];
     }
     this.holdMs += dtMs;

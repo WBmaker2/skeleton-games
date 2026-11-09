@@ -8,6 +8,8 @@ export interface Readiness {
 }
 
 export const MODEL_URL = 'models/movenet/model.json';
+// 주 엔진(MediaPipe) 모델. readiness는 둘 중 하나라도 있으면 준비됨으로 본다.
+export const POSE_TASK_URL = 'models/pose_landmarker_lite.task';
 
 function hasWebGL(): boolean {
   try {
@@ -24,8 +26,10 @@ async function isCached(): Promise<boolean> {
     const keys = await caches.keys();
     for (const key of keys) {
       const cache = await caches.open(key);
-      const match = await cache.match(MODEL_URL);
-      if (match) return true;
+      for (const url of [POSE_TASK_URL, MODEL_URL]) {
+        const match = await cache.match(url);
+        if (match) return true;
+      }
     }
     return false;
   } catch {
@@ -33,27 +37,34 @@ async function isCached(): Promise<boolean> {
   }
 }
 
+async function fetchOk(fetchFn: typeof fetch, url: string, timeoutMs: number): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetchFn(url, { signal: ctrl.signal });
+      return res.ok;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return false;
+  }
+}
+
 // 인식 모델 준비 상태를 가볍게 확인한다 (모델 전체를 로드하지 않음).
+// 주 엔진 pose task와 폴백 movenet 중 하나라도 닿으면 준비됨으로 본다.
 export async function checkReadiness(
   fetchFn: typeof fetch = fetch,
   timeoutMs = 8000
 ): Promise<Readiness> {
   const webgl = hasWebGL();
   const cached = await isCached();
-  let modelOk: boolean | null = null;
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    try {
-      const res = await fetchFn(MODEL_URL, { signal: ctrl.signal });
-      modelOk = res.ok;
-    } finally {
-      clearTimeout(timer);
-    }
-  } catch {
-    modelOk = false;
-  }
-  return { modelOk, webgl, cached };
+  const perUrl = Math.max(1000, Math.floor(timeoutMs / 2));
+  const taskOk = await fetchOk(fetchFn, POSE_TASK_URL, perUrl);
+  if (taskOk) return { modelOk: true, webgl, cached };
+  const moveOk = await fetchOk(fetchFn, MODEL_URL, perUrl);
+  return { modelOk: taskOk || moveOk, webgl, cached };
 }
 
 export function readinessMessage(r: Readiness): string {

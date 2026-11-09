@@ -1,7 +1,7 @@
 # 배포 전 검증 기록 (2026-09-19, main 1ab6adf 이후)
 
-대상 호스팅: GitHub Pages (project site). `vite.config.ts` base `/skeleton-idea/`
-(저장소명이 다르면 해당 값으로 교체 후 재빌드. 루트 호스팅 시 `/`).
+대상 호스팅: GitHub Pages (project site). `vite.config.ts` base `/skeleton-games/`
+(배포 repo명이 skeleton-games. 로컬 폴더명 skeleton-idea와 다르니 base를 바꾸지 말 것. 루트 호스팅 시 `/`).
 
 ## 자동 검증 (본 환경 실행)
 

@@ -33,9 +33,21 @@ describe('StarCatch', () => {
     g.start();
     g.star = { x: 100, y: 100, alive: true };
     const seen: string[] = [];
+    // 먼저 멀리 있다가 움직이면서 별에 닿아야 잡힌다.
+    g.tick(frame(wrists(0, 0, 500, 400)), 16);
     for (let i = 0; i < 20; i++) seen.push(...g.tick(frame(wrists(100, 100, 500, 400)), 16).map((e) => e.type));
     expect(seen).toContain('catch');
     expect(g.caught).toBe(1);
+  });
+  it('does not catch when the hand just rests on the star', () => {
+    const g = new StarCatch();
+    g.start();
+    g.star = { x: 100, y: 100, alive: true };
+    const seen: string[] = [];
+    // 별 자리에 손을 올려놓고 가만히 있으면 잡히지 않는다.
+    for (let i = 0; i < 20; i++) seen.push(...g.tick(frame(wrists(100, 100, 500, 400)), 16).map((e) => e.type));
+    expect(seen).not.toContain('catch');
+    expect(g.caught).toBe(0);
   });
   it('ignores far wrist', () => {
     const g = new StarCatch();

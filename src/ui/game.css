@@ -317,6 +317,29 @@
   }
 }
 
+/* 다음 단계 펄스: 꼭 눌러야 하는 버튼(다시 도전 등)에 금빛 링 애니메이션. */
+.btn-pulse {
+  position: relative;
+  animation: btn-pulse-ring 1.6s ease-out infinite;
+}
+@keyframes btn-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.55); }
+  70% { box-shadow: 0 0 0 14px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+
+.practice-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lp-paper);
+  font-size: var(--lp-text-body);
+}
+.practice-check input {
+  width: 20px;
+  height: 20px;
+}
+
 /* WCAG 2.2 2.3.3: honor reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .game-nav a,
@@ -324,6 +347,9 @@
     transition: none;
   }
   .stage-frame canvas.shake {
+    animation: none;
+  }
+  .btn-pulse {
     animation: none;
   }
 }

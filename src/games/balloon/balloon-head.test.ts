@@ -28,9 +28,20 @@ describe('BalloonHead', () => {
     const g = new BalloonHead();
     g.start();
     g.balloons = oneBalloon(320, 100);
+    // 헤딩 판정: 고개를 움직이면서 맞혀야 한다. 먼저 아래에 있다가 위로 쿡.
+    g.tick(frame([kp('nose', 320, 400), ...torso(320)]), 16);
     const events = g.tick(frame([kp('nose', 320, 100), ...torso(320)]), 16);
     expect(events.some((e) => e.type === 'bump')).toBe(true);
     expect(g.hits).toBe(1);
+  });
+  it('does not bump when the head just rests on the balloon', () => {
+    const g = new BalloonHead();
+    g.start();
+    g.balloons = oneBalloon(320, 100);
+    g.tick(frame([kp('nose', 320, 100), ...torso(320)]), 16);
+    const events = g.tick(frame([kp('nose', 320, 100), ...torso(320)]), 16);
+    expect(events.some((e) => e.type === 'bump')).toBe(false);
+    expect(g.hits).toBe(0);
   });
   it('bumps with the top of the head, not the face center', () => {
     const g = new BalloonHead();
@@ -39,6 +50,7 @@ describe('BalloonHead', () => {
     // 풍선 중심이 y=120이면 얼굴 중심과는 80px 떨어져 있지만
     // 풍선 아랫부분(165)이 이마에 닿아 헤딩으로 인정된다.
     g.balloons = oneBalloon(320, 120);
+    g.tick(frame([kp('nose', 320, 400), ...torso(320)]), 16);
     const events = g.tick(frame([kp('nose', 320, 200), ...torso(320)]), 16);
     expect(events.some((e) => e.type === 'bump')).toBe(true);
     expect(g.hits).toBe(1);
@@ -47,6 +59,7 @@ describe('BalloonHead', () => {
     const g = new BalloonHead();
     g.start();
     g.balloons = oneBalloon(320, 100);
+    g.tick(frame([kp('nose', 320, 400), ...torso(320)]), 16);
     const head = frame([kp('nose', 320, 100), ...torso(320)]);
     g.tick(head, 16);
     // 머리를 풍선에 붙인 채로 여러 프레임이 지나도 1번으로 유지된다.
@@ -65,18 +78,21 @@ describe('BalloonHead', () => {
     const g = new BalloonHead();
     g.start();
     g.balloons = oneBalloon(320, 100);
-    const head = frame([kp('nose', 320, 100), ...torso(320)]);
     const away = frame([kp('nose', 320, 400), ...torso(320)]);
+    g.tick(away, 16);
+    const head = frame([kp('nose', 320, 100), ...torso(320)]);
     g.tick(head, 16);
     expect(g.hits).toBe(1);
-    // 멀어졌다가 쿨다운 이후 다시 대면 2번째로 인정된다.
+    // 멀어졌다가 쿨다운 이후 다시 움직여 대면 2번째로 인정된다.
     // 풍선은 위쪽에 두고 머리만 아래에 둬서 접촉권을 벗어난다.
     g.balloons[0].x = 320;
     g.balloons[0].y = 100;
     g.tick(away, 600);
+    // 아래에서 위가 아니라 위에서 아래로 내려오는 경우도 속도만 있으면 인정.
     g.balloons[0].x = 320;
     g.balloons[0].y = 400;
     g.balloons[0].vy = 0;
+    g.tick(frame([kp('nose', 320, 100), ...torso(320)]), 16);
     const events = g.tick(away, 16);
     expect(events.some((e) => e.type === 'bump')).toBe(true);
     expect(g.hits).toBe(2);
@@ -88,6 +104,7 @@ describe('BalloonHead', () => {
       { x: 320, y: 100, vy: 60, alive: true, cool: 0, touched: false },
       { x: 330, y: 110, vy: 60, alive: true, cool: 0, touched: false }
     ];
+    g.tick(frame([kp('nose', 100, 400), ...torso(320)]), 16);
     const events = g.tick(frame([kp('nose', 325, 105), ...torso(325)]), 16);
     expect(events.filter((e) => e.type === 'bump')).toHaveLength(2);
     expect(g.hits).toBe(2);

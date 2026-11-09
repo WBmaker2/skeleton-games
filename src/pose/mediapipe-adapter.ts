@@ -46,20 +46,33 @@ export class MediaPipeAdapter implements PoseEngine {
   private landmarker: PoseLandmarker | null = null;
 
   async load(): Promise<void> {
-    const vision = await FilesetResolver.forVisionTasks(
+    // wasm은 로컬(models/wasm) 우선, CDN 폴백. 로컬에 없으면 CDN으로 자동 전환된다.
+    // 완전 오프라인이 필요하면 tasks-vision wasm 파일을 public/models/wasm/에 넣는다.
+    const wasmBases = [
+      'models/wasm',
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
-    );
-    // 시도 순서: (GPU, 로컬) → (GPU, CDN) → (CPU, 로컬) → (CPU, CDN).
-    // GPU 델리게이트 실패 기기에서도 CPU로 반드시 로드되게 한다.
+    ];
     const errors: unknown[] = [];
-    for (const delegate of ['GPU', 'CPU'] as const) {
-      for (const modelAssetPath of [POSE_TASK_LOCAL_URL, POSE_TASK_CDN_URL]) {
-        try {
-          this.landmarker = await createLandmarker(vision, modelAssetPath, delegate);
-          return;
-        } catch (err) {
-          console.warn(`[pose] MediaPipe ${delegate} ${modelAssetPath} failed`, err);
-          errors.push(err);
+    for (const wasmBase of wasmBases) {
+      let vision: unknown;
+      try {
+        vision = await FilesetResolver.forVisionTasks(wasmBase);
+      } catch (err) {
+        console.warn(`[pose] MediaPipe wasm ${wasmBase} failed`, err);
+        errors.push(err);
+        continue;
+      }
+      // 시도 순서: (GPU, 로컬) → (GPU, CDN) → (CPU, 로컬) → (CPU, CDN).
+      // GPU 델리게이트 실패 기기에서도 CPU로 반드시 로드되게 한다.
+      for (const delegate of ['GPU', 'CPU'] as const) {
+        for (const modelAssetPath of [POSE_TASK_LOCAL_URL, POSE_TASK_CDN_URL]) {
+          try {
+            this.landmarker = await createLandmarker(vision, modelAssetPath, delegate);
+            return;
+          } catch (err) {
+            console.warn(`[pose] MediaPipe ${delegate} ${modelAssetPath} failed`, err);
+            errors.push(err);
+          }
         }
       }
     }

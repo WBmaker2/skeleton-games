@@ -237,6 +237,16 @@
   }
 }
 
+/* 다음 단계 펄스: 2인 대결 이동 같은 꼭 눌러야 하는 버튼에 금빛 링. */
+.btn-pulse {
+  animation: btn-pulse-ring 1.6s ease-out infinite;
+}
+@keyframes btn-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.55); }
+  70% { box-shadow: 0 0 0 14px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+
 /* WCAG 2.2 2.3.3: honor reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .game-card {
@@ -252,5 +262,8 @@
   }
   .landing__versus:hover {
     transform: none;
+  }
+  .btn-pulse {
+    animation: none;
   }
 }

@@ -18,8 +18,26 @@ function mergeByName(list: ScoreEntry[]): ScoreEntry[] {
   return [...byName.values()];
 }
 
+function safeGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSet(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    // 시크릿모드·용량초과에서도 게임이 멈추지 않게 조용히 건너뛴다.
+    return false;
+  }
+}
+
 function readList(gameId: string): ScoreEntry[] {
-  const raw = localStorage.getItem(`skelplay:${gameId}`);
+  const raw = safeGet(`skelplay:${gameId}`);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as ScoreEntry[];
@@ -31,7 +49,7 @@ function readList(gameId: string): ScoreEntry[] {
 
 function writeList(gameId: string, list: ScoreEntry[]): void {
   list.sort((a, b) => b.score - a.score);
-  localStorage.setItem(`skelplay:${gameId}`, JSON.stringify(list.slice(0, 5)));
+  safeSet(`skelplay:${gameId}`, JSON.stringify(list.slice(0, 5)));
 }
 
 export function saveScore(gameId: string, entry: ScoreEntry): ScoreEntry {

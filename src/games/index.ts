@@ -11,6 +11,7 @@ import { yogaMeta } from './yoga/meta';
 import { duoMeta } from './duo/meta';
 import { recycleMeta } from './recycle/meta';
 import { moleMeta } from './mole/meta';
+import { boxingMeta } from './boxing/meta';
 import type { GameMeta } from './meta';
 
 export type { GameMeta };
@@ -30,5 +31,6 @@ export const GAMEMETAS: GameMeta[] = [
   yogaMeta,
   duoMeta,
   recycleMeta,
-  moleMeta
+  moleMeta,
+  boxingMeta
 ].sort((a, b) => a.no - b.no);

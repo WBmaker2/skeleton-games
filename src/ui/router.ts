@@ -2,13 +2,13 @@ export type GameId =
   | 'fruit' | 'squat' | 'math' | 'abc'
   | 'star' | 'balloon' | 'zombie' | 'dance'
   | 'simon' | 'yoga' | 'duo' | 'recycle'
-  | 'mole'
+  | 'mole' | 'boxing'
   | 'home';
 
 const ROUTES: GameId[] = [
   'fruit', 'squat', 'math', 'abc',
   'star', 'balloon', 'zombie', 'dance',
-  'simon', 'yoga', 'duo', 'recycle', 'mole'
+  'simon', 'yoga', 'duo', 'recycle', 'mole', 'boxing'
 ];
 
 export function parseHash(hash: string): GameId {

@@ -2,6 +2,7 @@ import type { PoseFrame } from '../../pose/types';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawLabel } from '../../ui/renderer';
+import { HEAD_MIN_SPEED } from '../../game/swipe';
 
 export interface Balloon {
   x: number;
@@ -26,11 +27,16 @@ export class BalloonHead implements Game {
   private running = false;
   // 기존 풍선이 있어도 일정 간격으로 새 풍선을 추가한다.
   private spawnMs = 0;
+  // 머리 움직임 추적: 가만히 맞대는 것만으로는 헤딩 인정 안 함.
+  private prevHead: { x: number; y: number } | null = null;
+  private headSpeed = 0;
 
   start(): void {
     this.running = true;
     this.board.reset();
     this.hits = 0;
+    this.prevHead = null;
+    this.headSpeed = 0;
     this.balloons = [{ x: 320, y: 80, vy: 60, alive: true, cool: 0, touched: false }];
     this.spawnMs = BalloonHead.SPAWN_INTERVAL_MS;
   }
@@ -95,6 +101,14 @@ export class BalloonHead implements Game {
     const events: GameEvent[] = [];
     const dt = dtMs / 1000;
     const head = this.headOf(frame);
+    // 머리 속도: 이전 프레임 위치와 비교. 첫 프레임은 0 (받치기 방지).
+    if (head && this.prevHead && dtMs > 0) {
+      this.headSpeed = (Math.hypot(head.x - this.prevHead.x, head.y - this.prevHead.y) / dtMs) * 1000;
+    } else {
+      this.headSpeed = 0;
+    }
+    this.prevHead = head ? { ...head } : null;
+    const heading = this.headSpeed >= HEAD_MIN_SPEED;
     for (const b of this.balloons) {
       if (!b.alive) continue;
       if (b.cool > 0) b.cool -= dtMs;
@@ -105,8 +119,9 @@ export class BalloonHead implements Game {
         // 접촉권을 완전히 벗어나야 다음 타격이 인정된다.
         // 머리를 풍선에 붙인 채로 있으면 같은 헤딩으로 중복 카운트하지 않는다.
         // 풍선별 상태라 2개를 동시에 받는 것은 각각 인정된다.
+        // 머리를 움직이면서(고개로 쿡) 맞혀야 인정: 가만히 맞대면 헤딩 안 됨.
         if (dist > BalloonHead.SEPARATE_R) b.touched = false;
-        if (!b.touched && b.cool <= 0 && dist < BalloonHead.CONTACT_R) {
+        if (!b.touched && b.cool <= 0 && dist < BalloonHead.CONTACT_R && heading) {
           b.vy = -330;
           b.cool = BalloonHead.BUMP_COOLDOWN_MS;
           b.touched = true;

@@ -11,7 +11,9 @@ function frame(kps: Keypoint[], width = 640, height = 480): PoseFrame {
 }
 
 // 별 하나를 0.3초 이상 대고 있는 프레임으로 진행 (16ms씩 25틱 = 400ms).
+// 스윕 판정: 먼저 멀리 있다가 움직이면서 별에 닿아야 인정된다.
 function touch(g: DuoStars, x: number, y: number, w = 640, h = 480) {
+  g.tick(frame([kp('left_wrist', 0, 0), kp('right_wrist', 0, 0)], w, h), 16);
   const f = frame([kp('left_wrist', 0, 0), kp('right_wrist', x, y)], w, h);
   let out: string[] = [];
   for (let i = 0; i < 25; i++) out.push(...g.tick(f, 16).map((e) => e.type));
@@ -60,11 +62,22 @@ describe('DuoStars', () => {
     // 오른손 하나로 전부 잇기 (왼손은 멀리).
     const seen: string[] = [];
     for (const s of [...g.stars]) {
+      g.tick(frame([kp('left_wrist', 0, 479), kp('right_wrist', 0, 479)]), 16);
       const f = frame([kp('left_wrist', 0, 479), kp('right_wrist', s.x, s.y)]);
       for (let i = 0; i < 25; i++) seen.push(...g.tick(f, 16).map((e) => e.type));
     }
     expect(seen).toContain('pair');
     expect(g.pairs).toBe(1);
+  });
+
+  it('does not advance when the hand just rests on the star', () => {
+    const g = new DuoStars();
+    g.start();
+    const target = g.stars[0];
+    const f = frame([kp('left_wrist', 0, 0), kp('right_wrist', target.x, target.y)]);
+    for (let i = 0; i < 25; i++) g.tick(f, 16);
+    expect(g.index).toBe(0);
+    expect(g.pairs).toBe(0);
   });
 
   it('hides face mask for readability of stars and lines', () => {

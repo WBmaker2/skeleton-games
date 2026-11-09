@@ -1,8 +1,9 @@
 import type { PoseFrame } from '../../pose/types';
-import { bodyCenterX, palmOf } from '../../pose/geometry';
+import { bodyCenterX } from '../../pose/geometry';
 import type { Game, GameEvent } from '../../game/types';
 import { ScoreBoard } from '../../game/engine';
 import { drawBar, drawLabel } from '../../ui/renderer';
+import { SwipeTracker } from '../../game/swipe';
 
 export type RecycleKind = 'plastic' | 'can';
 
@@ -44,6 +45,7 @@ export class RecycleSort implements Game {
   private seed = 1;
   private dimW = 640;
   private dimH = 480;
+  private swipe = new SwipeTracker();
 
   // 목표 통 구역: 플라스틱은 왼쪽(0), 캔은 오른쪽(2).
   get targetZone(): 0 | 2 {
@@ -66,6 +68,7 @@ export class RecycleSort implements Game {
     this.seed = 1;
     this.dimW = 640;
     this.dimH = 480;
+    this.swipe.reset();
     this.spawn();
     this.playerZone = 1;
     this.lastResult = null;
@@ -289,10 +292,10 @@ export class RecycleSort implements Game {
       this.dimH = frame.height;
       if (this.carriedBy === null) this.clampToMiddle(frame.width, frame.height);
     }
-    const palms: { side: 'left' | 'right'; x: number; y: number }[] = [];
+    const palms: { side: 'left' | 'right'; x: number; y: number; swiping: boolean }[] = [];
     for (const side of ['left', 'right'] as const) {
-      const p = palmOf(frame, side);
-      if (p) palms.push({ side, x: p.x, y: p.y });
+      const p = this.swipe.track(frame, side, dtMs);
+      if (p) palms.push({ side, x: p.x, y: p.y, swiping: this.swipe.isSwiping(side) });
     }
 
     // 들고 있는 중: 손을 따라다닌다.
@@ -311,9 +314,9 @@ export class RecycleSort implements Game {
         if (this.binHoldMs <= RECYCLE_BIN_HOLD_MS) return [];
         return this.judge(zone);
       }
-      // 든 손이 사라지면: 다른 손이 쓰레기 근처에 있으면 이어서 들기.
+      // 든 손이 사라지면: 움직이는 다른 손이 쓰레기 근처에 있으면 이어서 들기.
       const other = palms.find(
-        (p) => Math.hypot(p.x - this.item.x, p.y - this.item.y) <= RECYCLE_GRAB_R
+        (p) => p.swiping && Math.hypot(p.x - this.item.x, p.y - this.item.y) <= RECYCLE_GRAB_R
       );
       if (other) {
         this.carriedBy = other.side;
@@ -326,10 +329,12 @@ export class RecycleSort implements Game {
       return [];
     }
 
-    // 바닥에 놓인 상태: 손이 닿으면(가까운 손) 손에 붙는다.
+    // 바닥에 놓인 상태: 움직이는 손이 닿으면(가까운 손) 손에 붙는다.
+    // 쓰레기 위에 손을 올려놓고 가만히 있으면 잡히지 않는다.
     let best: { side: 'left' | 'right' } | null = null;
     let bestDist = RECYCLE_GRAB_R;
     for (const p of palms) {
+      if (!p.swiping) continue;
       const d = Math.hypot(p.x - this.item.x, p.y - this.item.y);
       if (d <= bestDist) {
         bestDist = d;

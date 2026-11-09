@@ -23,8 +23,21 @@ describe('FruitNinja', () => {
     g.start();
     g.fruits.length = 0;
     g.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'fruit', alive: true });
+    // 스윕 판정: 먼저 멀리 있다가 빠르게 움직여서 베어야 한다.
+    g.tick(wristFrame(0, 0), 16);
     const events = g.tick(wristFrame(100, 100), 16);
     expect(events.some((e) => e.type === 'slice')).toBe(true);
+  });
+  it('does not slice when the hand just rests on fruit', () => {
+    const g = new FruitNinja();
+    g.start();
+    g.fruits.length = 0;
+    g.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'fruit', alive: true });
+    // 같은 자리에 가만히 두면 속도가 0이라 베어지지 않는다.
+    g.tick(wristFrame(100, 100), 16);
+    const events = g.tick(wristFrame(100, 100), 16);
+    expect(events.some((e) => e.type === 'slice')).toBe(false);
+    expect(g.fruits[0].alive).toBe(true);
   });
   it('does not slice when far away', () => {
     const g = new FruitNinja();
@@ -48,6 +61,7 @@ describe('FruitNinja', () => {
     g.slices = 9;
     g.fruits.length = 0;
     g.fruits.push({ x: 100, y: 100, vx: 0, vy: 0, kind: 'fruit', alive: true });
+    g.tick(wristFrame(0, 0), 16);
     g.tick(wristFrame(100, 100), 16);
     expect(g.slices).toBe(10);
     expect(g.fruits.length).toBeGreaterThanOrEqual(2);

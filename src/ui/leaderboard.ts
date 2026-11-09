@@ -7,7 +7,7 @@ import type { PlayableId } from './app';
 
 export const BOARD_IDS: PlayableId[] = [
   'fruit', 'squat', 'math', 'abc', 'star', 'balloon',
-  'zombie', 'dance', 'simon', 'yoga', 'duo', 'recycle', 'mole'
+  'zombie', 'dance', 'simon', 'yoga', 'duo', 'recycle', 'mole', 'boxing'
 ];
 
 function fmtDate(ms?: number): string {
@@ -51,15 +51,15 @@ export function resultFormHTML(score: number): string {
     `<form id="regform"><p><label for="regname">리더보드에 올릴 이름</label></p>` +
     `<p><input id="regname" name="regname" maxlength="12" autocomplete="off" aria-describedby="reg-err"> ` +
     `<button type="submit" class="btn">등록</button></p>` +
-    `<p id="reg-err" class="form-err"></p></form>` +
-    `<button type="button" id="again" class="btn">다시 도전</button>`
+    `<p id="reg-err" class="form-err" role="alert"></p></form>` +
+    `<button type="button" id="again" class="btn btn-pulse">다시 도전</button>`
   );
 }
 
 export function resultDoneHTML(score: number): string {
   return (
     `<p>60초 챌린지 종료! ${score}점 — 등록 완료!</p>` +
-    `<button type="button" id="again" class="btn">다시 도전</button>`
+    `<button type="button" id="again" class="btn btn-pulse">다시 도전</button>`
   );
 }
 

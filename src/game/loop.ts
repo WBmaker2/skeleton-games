@@ -29,11 +29,15 @@ export interface LoopOpts {
   // 제한시간(초). 다 되면 루프를 멈추고 onTimeUp을 1회 호출한다.
   timeLimitSec?: number;
   onTimeUp?: (board: { score: number; combo: number }) => void;
+  // 연속 추론 실패 알림. 30회 연속 실패마다 1회 호출, 성공하면 리셋.
+  onPoseError?: (consecutiveErrors: number) => void;
+  // 연습 모드: true면 시간 제한 없이 계속 플레이한다.
+  practice?: boolean;
 }
 
-// 축하 이펙트를 터뜨리는 성공 이벤트들 (12종 게임 공통).
+// 축하 이펙트를 터뜨리는 성공 이벤트들 (게임 공통).
 const CELEBRATE = new Set([
-  'slice', 'catch', 'bump', 'dodge', 'duck',
+  'slice', 'catch', 'bump', 'dodge', 'duck', 'punch',
   'beat', 'correct', 'pose-ok', 'pose-done', 'pair', 'sorted',
   // 분리수거 잡기: 손에 붙는 순간 손 위치에 파티클 폭발.
   'grab'
@@ -57,6 +61,10 @@ export class GameLoop {  private raf = 0;
   private startedAt = 0;
   private timeUpFired = false;
   private dummyVideo: HTMLVideoElement | null = null;
+  private estimating = false;
+  private consecutiveErrors = 0;
+  private paused = false;
+  private pausedAt = 0;
   constructor(private opts: LoopOpts) {}
 
   get fps(): number {
@@ -67,9 +75,33 @@ export class GameLoop {  private raf = 0;
     return this.particles.length;
   }
 
+  get errorCount(): number {
+    return this.consecutiveErrors;
+  }
+
+  get isPaused(): boolean {
+    return this.paused;
+  }
+
   get elapsedSec(): number {
     if (!this.running || this.startedAt === 0) return 0;
+    if (this.paused) return Math.max(0, (this.pausedAt - this.startedAt) / 1000);
     return Math.max(0, (performance.now() - this.startedAt) / 1000);
+  }
+
+  pause(): void {
+    if (!this.running || this.paused) return;
+    this.paused = true;
+    this.pausedAt = performance.now();
+  }
+
+  resume(): void {
+    if (!this.running || !this.paused) return;
+    const now = performance.now();
+    // 쉰 만큼 시작 시각을 뒤로 밀어 타이머·난이도가 멈췄던 것처럼 이어진다.
+    this.startedAt += now - this.pausedAt;
+    this.paused = false;
+    this.lastMs = 0;
   }
 
   // 콤보 마일스톤 축하: 화면 중앙에 큰 파티클 폭발.
@@ -96,33 +128,57 @@ export class GameLoop {  private raf = 0;
     this.lastMs = 0;
     this.startedAt = performance.now();
     this.timeUpFired = false;
+    this.estimating = false;
+    this.consecutiveErrors = 0;
+    this.paused = false;
+    this.pausedAt = 0;
     const tick = async (nowMs: number): Promise<void> => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(tick);
-      // 60초 챌린지: 제한시간이 되면 루프를 멈추고 1회만 통지한다.
-      const limitMs = (this.opts.timeLimitSec ?? 60) * 1000;
-      if (!this.timeUpFired && nowMs - this.startedAt >= limitMs) {
-        this.timeUpFired = true;
-        this.stop();
-        this.opts.onTimeUp?.({
-          score: this.opts.game.board.score,
-          combo: this.opts.game.board.combo
-        });
+      // 일시정지 중에는 추론·타이머를 멈추고 다음 프레임만 예약한다.
+      if (this.paused) {
+        this.lastMs = nowMs;
         return;
       }
+      // 연습 모드가 아닐 때만 제한시간을 적용한다.
+      if (!this.opts.practice) {
+        const limitMs = (this.opts.timeLimitSec ?? 60) * 1000;
+        if (!this.timeUpFired && nowMs - this.startedAt >= limitMs) {
+          this.timeUpFired = true;
+          this.stop();
+          this.opts.onTimeUp?.({
+            score: this.opts.game.board.score,
+            combo: this.opts.game.board.combo
+          });
+          return;
+        }
+      }
+      // 단일 추론 가드: 이전 추론이 끝나지 않았으면 이번 프레임은 건너뛴다.
+      // 느린 기기에서 estimate가 쌓여 지연이 커지는 것을 막는다.
+      if (this.estimating) return;
       if (this.lastMs === 0) this.lastMs = nowMs;
       const dt = Math.min(100, Math.max(0, nowMs - this.lastMs));
       this.lastMs = nowMs;
-      // 저사양 지원 중단: 매 rAF마다 추론을 시도해 즉각 추적한다.
-      // 느린 기기에서는 estimate await 자체가 속도를 제한하므로 별도 게이트가 없다.
       this.monitor.sample(nowMs);
       const video = this.opts.video ?? (this.dummyVideo ??= document.createElement('video'));
       let frame: PoseFrame;
+      this.estimating = true;
       try {
         frame = await this.opts.engine.estimate(video);
       } catch {
+        this.estimating = false;
+        this.consecutiveErrors += 1;
+        if (this.consecutiveErrors % 30 === 0) {
+          try {
+            this.opts.onPoseError?.(this.consecutiveErrors);
+          } catch {
+            // 알림 실패는 루프에 영향 없음
+          }
+        }
         return;
       }
+      this.estimating = false;
+      this.consecutiveErrors = 0;
       const events = this.opts.game.tick(frame, dt);
       // 성공/감점 이펙트: 손목 위치에 파티클 폭발. 폭탄은 화면 흔들림 추가.
       for (const e of events) {

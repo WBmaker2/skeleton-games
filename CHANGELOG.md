@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.20.0 (2026-11-09) — 스윕 판정·쉐도우 복싱
+
+- 손 타격 게임에 스윕 판정 추가 — 가만히 받치면 점수가 오르지 않고, 손을 움직이면서 닿아야 인정 (`src/game/swipe.ts`)
+- 과일 닌자: 휙 움직여야 베어짐, 가만히 받으면 안 베어짐 (`src/games/fruit/fruit-ninja.ts`)
+- 별잡기·2인 별자리: 움직이면서 닿은 뒤 0.3초 대기, 올려놓고 기다리면 인정 안 됨 (`src/games/star/star-catch.ts`, `src/games/duo/duo-stars.ts`)
+- 분리수거: 움직이는 손으로 잡아야 손에 붙음, 올려놓으면 안 잡힘 (`src/games/recycle/recycle-sort.ts`)
+- 풍선 헤딩: 고개를 움직여 쿡 받아야 헤딩 인정, 가만히 맞대면 안 됨 (`src/games/balloon/balloon-head.ts`)
+- 신규 14번째 게임 '쉐도우 복싱' 추가: 미트를 향해 주먹을 휙 뻗어 치기, 1대당 10점 (설계: 펀치 속도 200px/s 이상, `src/games/boxing/`)
+- 복싱 등록: 라우터·게임팩토리·랜딩·리더보드·펀치 이펙트 (`src/ui/router.ts`, `src/ui/app.ts`, `src/landing/landing.ts`, `src/ui/leaderboard.ts`, `src/game/loop.ts`)
+- 게임 설명·도움말·카드 아트 프롬프트 갱신 (`README.md`, `docs/game-art-prompts.md`)
+- 관련 테스트 추가·수정 (받치기 방지·스윕 인정·복싱 4종)
+
+## 0.19.0 (2026-11-09) — 안정화·연습모드·공용 유틸
+
+- 게임 루프가 추론이 끝날 때까지 다음 추론을 건너뛰도록 수정 — 느린 기기에서 지연이 쌓이던 문제 완화, 30회 연속 실패 시 화면 안내 (`src/game/loop.ts`)
+- 일시정지·계속하기 버튼 추가 — 쉬는 동안 타이머와 난이도가 멈춤 (`src/game/loop.ts`, `src/main.ts`)
+- 연습 모드 추가 — 카운트다운 화면에서 체크하면 시간 제한 없이 계속 플레이 (`src/main.ts`)
+- 소리 끄기·켜기 버튼 추가 — 설정은 기기에 저장됨 (`src/ui/feedback.ts`)
+- 공유 링크 복사 버튼 추가 — 버튼 하나로 링크 복사 (`src/main.ts`)
+- 인식 준비 확인이 pose task·movenet 둘 다 보도록 수정 — 하나라도 있으면 준비됨 (`src/ui/readiness.ts`)
+- MediaPipe wasm을 로컬(`models/wasm`) 우선으로 시도, 없으면 CDN으로 자동 전환 (`src/pose/mediapipe-adapter.ts`)
+- 카메라에 초당 30프레임 제한 추가 — 저사양 기기 발열·끊김 완화 (`src/main.ts`)
+- 저장소(점수)가 꽉 찼거나 차단돼도 게임이 멈추지 않게 수정 (`src/game/storage.ts`)
+- 공용 유틸 추가: 같은 난수(`src/game/rng.ts`), 난이도 보간(`src/game/difficulty.ts`), 손 추적(`src/game/hand-tracker.ts`) — 두더지 팡팡부터 적용
+- 가이드 패널 배경 중복 제거 (`src/ui/renderer.ts`)
+- 게임 방법 모달에 Tab 가둠 추가 — 키보드로 모달 밖으로 나가지 않음 (`src/ui/modal.ts`)
+- 다음 단계 버튼에 금빛 펄스: 다시 도전·2인 대결 (`src/ui/game.css`, `src/landing/landing.css`)
+- PWA: 게임 아트는 미리 받지 않고 필요할 때 받도록 변경 — 첫 방문 데이터 절약 (`vite.config.ts`)
+- CI 추가: `tsc`·`vitest`·`build` 자동 검사 (`.github/workflows/ci.yml`)
+- 배포 문서의 base 표기 통일: `/skeleton-games/` 유지 (`docs/DEPLOY.md`, `docs/PREDEPLOY.md`, `vite.config.ts`)
+
 ## 0.18.7 (2026-09-27) — 카운트다운 1초 균등 간격
 
 - 게임 시작 카운트가 1초씩 균등하게 바뀌도록 수정 — 숫자를 정해진 순서대로 넘기던 탓에 5·4·3·2·1이 순식간에 지나가고 1만 오래 멈춰 있었음, 이제 경과 시간 기준으로 각 숫자 1스텝씩 표시 (`src/main.ts`)
