@@ -83,6 +83,7 @@
 
 - a cheerful kid in red boxing gloves punching toward a round red focus mitt,
   motion lines showing a fast punch, warm paper background
+- 실제 생성: 구글 플로우 Nano Banana 2.1로 생성 (2026-11-09)
 
 ## 배치 확인
 

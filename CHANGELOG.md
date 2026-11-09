@@ -9,6 +9,7 @@
 - 풍선 헤딩: 고개를 움직여 쿡 받아야 헤딩 인정, 가만히 맞대면 안 됨 (`src/games/balloon/balloon-head.ts`)
 - 신규 14번째 게임 '쉐도우 복싱' 추가: 미트를 향해 주먹을 휙 뻗어 치기, 1대당 10점 (설계: 펀치 속도 200px/s 이상, `src/games/boxing/`)
 - 복싱 등록: 라우터·게임팩토리·랜딩·리더보드·펀치 이펙트 (`src/ui/router.ts`, `src/ui/app.ts`, `src/landing/landing.ts`, `src/ui/leaderboard.ts`, `src/game/loop.ts`)
+- 복싱 카드 그림 추가 (`public/art/boxing-shadow.jpg`, 구글 플로우 Nano Banana 2.1로 생성, 기존 13종과 같은 따뜻한 종이·플랫 스타일)
 - 게임 설명·도움말·카드 아트 프롬프트 갱신 (`README.md`, `docs/game-art-prompts.md`)
 - 관련 테스트 추가·수정 (받치기 방지·스윕 인정·복싱 4종)
 
